@@ -10,7 +10,7 @@
       content="width=device-width, initial-scale=1, shrink-to-fit=no"
     />
     <!-- Site Metas -->
-    <link rel="icon" type="image/x-icon" href="/assets/images/faces/tmu.jpg"  >
+    <link rel="icon" type="image/x-icon" href="/assets/images/faces/tmu.jpg" />
     <meta name="keywords" content="" />
     <meta name="description" content="" />
     <meta name="author" content="" />
@@ -627,7 +627,7 @@
             </div>
           </div>
           <br />
-          <button type="submit" class="btn btn-outline-primary">Go</button>
+          <button onclick="Go()" class="btn btn-outline-primary">Go</button>
         </form>
       </div>
       <div class="img-box text-center">
@@ -879,7 +879,47 @@
             );
             console.error("Fetch error:", error);
           }
-        });
+        }); 
+
+      async function Go() {
+        const input = document.getElementById("busNumber");
+        const inputValue = input.value.trim();
+        input.value = ""; // ✅ Clear the input field
+
+        try {
+          const res = await fetch("/", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ inputValue }),
+          });
+
+          if (!res.ok) {
+            throw new Error(`Server error: ${res.status}`);
+          }
+
+          const response = await res.json();
+
+          if (!response.success) {
+            alert(response.message);
+          } else {
+            console.log(response.data);
+            appendBuses(response.data); // ✅ Make sure this function exists
+
+            window.scrollBy({
+              top: 200,
+              left: 0,
+              behavior: "smooth",
+            });
+          }
+        } catch (error) {
+          alert(
+            "Network error occurred. Please check your internet or try again later."
+          );
+          console.error("Fetch error:", error);
+        }
+      }
 
       function appendBuses(bus) {
         // Clear previous content
