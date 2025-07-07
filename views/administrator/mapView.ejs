@@ -254,7 +254,12 @@ const user= <%- JSON.stringify(user) %>;
   const socket = io({
     query: {
       administratorId: user._id
-    }
+    },
+    reconnection: true,             // Enable automatic reconnection
+  reconnectionAttempts: Infinity, // Try forever
+  reconnectionDelay: 5000,        // Wait 5 seconds before retrying
+  reconnectionDelayMax: 10000,    // Max delay between attempts
+  timeout: 20000, 
   });
 
 

@@ -134,48 +134,53 @@
     </script>
 
     <script>
-      const user = <%- JSON.stringify(user) %>;
-      const socket = io({
-        query: {
-          adminId: user._id
-        }
-      });
-
-      // Hide all live buses from DOM
-      socket.emit("liveBuses", function (response) {
-        if (response.success) {
-          const liveBusIds = response.data || [];
-
-          // First show all buses
-          const allBusCards = document.querySelectorAll(".bus-col");
-          allBusCards.forEach((card) => {
-            card.style.display = "block";
+          const user = <%- JSON.stringify(user) %>;
+          const socket = io({
+            query: {
+              adminId: user._id
+            },
+            reconnection: true,             // Enable automatic reconnection
+      reconnectionAttempts: Infinity, // Try forever
+      reconnectionDelay: 5000,        // Wait 5 seconds before retrying
+      reconnectionDelayMax: 10000,    // Max delay between attempts
+      timeout: 20000,
           });
 
-          // Then hide the live ones
-          liveBusIds.forEach((busId) => {
-            const el = document.getElementById(busId);
-            if (el) {
-              el.style.display = "none";
+          // Hide all live buses from DOM
+          socket.emit("liveBuses", function (response) {
+            if (response.success) {
+              const liveBusIds = response.data || [];
+
+              // First show all buses
+              const allBusCards = document.querySelectorAll(".bus-col");
+              allBusCards.forEach((card) => {
+                card.style.display = "block";
+              });
+
+              // Then hide the live ones
+              liveBusIds.forEach((busId) => {
+                const el = document.getElementById(busId);
+                if (el) {
+                  el.style.display = "none";
+                }
+              });
+
+              console.log("🚍 Inactive buses are now visible.");
+            } else {
+              console.warn("⚠️ Could not fetch live buses.");
             }
           });
 
-          console.log("🚍 Inactive buses are now visible.");
-        } else {
-          console.warn("⚠️ Could not fetch live buses.");
-        }
-      });
+          // Optional: update when a new bus goes online/offline in real time
+          socket.on("add", (busId) => {
+            const el = document.getElementById(busId);
+            if (el) el.style.display = "none"; // hide when bus goes live
+          });
 
-      // Optional: update when a new bus goes online/offline in real time
-      socket.on("add", (busId) => {
-        const el = document.getElementById(busId);
-        if (el) el.style.display = "none"; // hide when bus goes live
-      });
-
-      socket.on("remove", (busId) => {
-        const el = document.getElementById(busId);
-        if (el) el.style.display = "block"; // show when bus goes offline
-      });
+          socket.on("remove", (busId) => {
+            const el = document.getElementById(busId);
+            if (el) el.style.display = "block"; // show when bus goes offline
+          });
     </script>
     <script type="module" src="/foreground.js"></script>
 

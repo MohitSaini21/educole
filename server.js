@@ -346,10 +346,6 @@ function processQueue(busId) {
 
 const pendingBusOverrides = {}; // store busId => socket.id
 
-setInterval(() => {
-  io.emit("keep-alive", "💓");
-}, 5000); // every 8s
-
 io.use((socket, next) => {
   try {
     const query = socket.handshake.query;
@@ -759,6 +755,8 @@ io.on("connection", (socket) => {
 
   socket.on("busLocationUpdate", (data) => {
     try {
+      if (data == null) return; // catches null or undefined only
+
       const busId = data.bus?._id;
       if (!busId) return;
 

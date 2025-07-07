@@ -62,4 +62,6 @@ const busActivityLogSchema = new Schema(
 );
 
 const BusActivityLog = model("BusActivityLog", busActivityLogSchema);
+
+busActivityLogSchema.index({ bus: 1, createdAt: 1 }, { unique: true });
 export default BusActivityLog;

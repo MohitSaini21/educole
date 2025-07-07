@@ -16,8 +16,7 @@
     <link rel="stylesheet" href="/assets/vendors/css/vendor.bundle.base.css" />
     <!-- endinject -->
     <!-- Plugin css for this page -->
- 
-    
+
     <!-- End plugin css for this page -->
     <!-- inject:css -->
     <!-- endinject -->
@@ -86,104 +85,109 @@
     <!-- custom Scripts -->
 
     <script>
-                              window.onload = function () {
-                                document.getElementById("loader").style.display = "none";
-                              };
+                                  window.onload = function () {
+                                    document.getElementById("loader").style.display = "none";
+                                  };
 
 
 
-                                   const user= <%- JSON.stringify(user) %>;
-                        const socket = io({
-                          query: {
-                            adminId: user._id
-                          }
-                        });
+                                       const user= <%- JSON.stringify(user) %>;
+                            const socket = io({
+                              query: {
+                                adminId: user._id
+                              },
+                              reconnection: true,             // Enable automatic reconnection
+      reconnectionAttempts: Infinity, // Try forever
+      reconnectionDelay: 5000,        // Wait 5 seconds before retrying
+      reconnectionDelayMax: 10000,    // Max delay between attempts
+      timeout: 20000,
+                            });
 
 
 
-                        socket.emit("liveBuses", function (response) {
-                    if (response.success) {
-                      console.log(response);
+                            socket.emit("liveBuses", function (response) {
+                        if (response.success) {
+                          console.log(response);
 
-                      const busIds = response.data; // assuming it's an array of bus IDs
-                      const gridContainer = document.getElementById("grid");
+                          const busIds = response.data; // assuming it's an array of bus IDs
+                          const gridContainer = document.getElementById("grid");
 
-                      // Clear existing grid content (optional)
-                      gridContainer.innerHTML = "";
+                          // Clear existing grid content (optional)
+                          gridContainer.innerHTML = "";
 
-                      busIds.forEach((busId) => {
-                        const colDiv = document.createElement("div");
-                        colDiv.className = "col-12 col-sm-6 col-md-4 col-lg-3 p-0 m-0";
-                        colDiv.id = `${busId}`; // ✅ Assign unique ID
+                          busIds.forEach((busId) => {
+                            const colDiv = document.createElement("div");
+                            colDiv.className = "col-12 col-sm-6 col-md-4 col-lg-3 p-0 m-0";
+                            colDiv.id = `${busId}`; // ✅ Assign unique ID
 
-                        colDiv.innerHTML = `
-                          <iframe
-                            src="/locationBus/${busId}"
-                            style="height: 300px; width: 100%; border: 1px solid rgba(0, 0, 0, 0.2); display: block; pointer-events: none;"
-                          </iframe>
-                        `;
+                            colDiv.innerHTML = `
+                              <iframe
+                                src="/locationBus/${busId}"
+                                style="height: 300px; width: 100%; border: 1px solid rgba(0, 0, 0, 0.2); display: block; pointer-events: none;"
+                              </iframe>
+                            `;
 
-                             colDiv.addEventListener("click", () => {
-          window.location.href = `/admin/particularBusLive/${busId}`;
-        });
+                                 colDiv.addEventListener("click", () => {
+              window.location.href = `/admin/particularBusLive/${busId}`;
+            });
 
-                        gridContainer.appendChild(colDiv);
+                            gridContainer.appendChild(colDiv);
+                          });
+
+                        } else {
+
+
+                          console.log("Data does not exist");
+                        }
                       });
 
-                    } else {
+                      const gridContainer = document.getElementById("grid");
+
+              // 👉 ADD Event: Add new iframe block for a bus
+          socket.on("add", (busId) => {
+            const existing = document.getElementById(`${busId}`);
+            if (existing) return; // Avoid duplicates
+
+            const colDiv = document.createElement("div");
+            colDiv.className = "col-12 col-sm-6 col-md-4 col-lg-3 p-0 m-0";
+
+            colDiv.id = `${busId}`; // updated to avoid duplicate check issues
+
+            colDiv.innerHTML = `
 
 
-                      console.log("Data does not exist");
-                    }
-                  });
+              <iframe
+                src="/locationBus/${busId}"
+            style="height: 300px; width: 100%; border: 1px solid rgba(0, 0, 0, 0.2); display: block; pointer-events: none;"
 
-                  const gridContainer = document.getElementById("grid");
+              </iframe>
+            `;
 
-          // 👉 ADD Event: Add new iframe block for a bus
-      socket.on("add", (busId) => {
-        const existing = document.getElementById(`${busId}`);
-        if (existing) return; // Avoid duplicates
-
-        const colDiv = document.createElement("div");
-        colDiv.className = "col-12 col-sm-6 col-md-4 col-lg-3 p-0 m-0";
-
-        colDiv.id = `${busId}`; // updated to avoid duplicate check issues
-
-        colDiv.innerHTML = `
-
-
-          <iframe
-            src="/locationBus/${busId}"
-        style="height: 300px; width: 100%; border: 1px solid rgba(0, 0, 0, 0.2); display: block; pointer-events: none;"
-
-          </iframe>
-        `;
-
-        // ✅ Add click event to redirect to live page
-        colDiv.addEventListener("click", () => {
-          window.location.href = `/admin/particularBusLive/${busId}`;
-        });
-
-
-
-        gridContainer.appendChild(colDiv);
-        console.log(`✅ Bus added: ${busId}`);
-      });
-
-
-
-            socket.on("remove", (busId) => {
-              const busDiv =document.getElementById(busId);
-
-              if (busDiv) {
-
-
-                busDiv.remove();
-                console.log(`❌ Bus removed: ${busId}`);
-              } else {
-                console.log(`⚠️ Bus not found in DOM: ${busId}`);
-              }
+            // ✅ Add click event to redirect to live page
+            colDiv.addEventListener("click", () => {
+              window.location.href = `/admin/particularBusLive/${busId}`;
             });
+
+
+
+            gridContainer.appendChild(colDiv);
+            console.log(`✅ Bus added: ${busId}`);
+          });
+
+
+
+                socket.on("remove", (busId) => {
+                  const busDiv =document.getElementById(busId);
+
+                  if (busDiv) {
+
+
+                    busDiv.remove();
+                    console.log(`❌ Bus removed: ${busId}`);
+                  } else {
+                    console.log(`⚠️ Bus not found in DOM: ${busId}`);
+                  }
+                });
     </script>
     <script type="module" src="/foreground.js"></script>
     <!-- custom Scripts -->
