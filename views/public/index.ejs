@@ -608,7 +608,7 @@
     <!-- book section -->
     <section class="book_section">
       <div class="form_container">
-        <form id="busForm">
+        <div id="busForm">
           <div class="row g-3 align-items-center">
             <div class="col-auto">
               <label for="inputPassword6" class="col-form-label"
@@ -627,8 +627,8 @@
             </div>
           </div>
           <br />
-          <button onclick="Go()" class="btn btn-outline-primary">Go</button>
-        </form>
+          <button onclick="GO()" class="btn btn-outline-primary">Go</button>
+        </div>
       </div>
       <div class="img-box text-center">
         <img
@@ -835,53 +835,8 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="/public/js/custom.js"></script>
 
-    <script type="module">
-      import { fetchToken } from "/firebase.js";
-      document
-        .getElementById("busForm")
-        .addEventListener("submit", async (e) => {
-          e.preventDefault(); // ✅ Prevent default form submission
-
-          const input = document.getElementById("busNumber");
-          const inputValue = input.value.trim();
-          input.value = ""; // ✅ Clear the input field
-
-          try {
-            const res = await fetch("/", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({ inputValue }),
-            });
-
-            if (!res.ok) {
-              throw new Error(`Server error: ${res.status}`);
-            }
-
-            const response = await res.json();
-
-            if (!response.success) {
-              alert(response.message);
-            } else {
-              console.log(response.data);
-              appendBuses(response.data); // ✅ Make sure this function exists
-
-              window.scrollBy({
-                top: 200,
-                left: 0,
-                behavior: "smooth",
-              });
-            }
-          } catch (error) {
-            alert(
-              "Network error occurred. Please check your internet or try again later."
-            );
-            console.error("Fetch error:", error);
-          }
-        }); 
-
-      async function Go() {
+    <script>
+      async function GO() {
         const input = document.getElementById("busNumber");
         const inputValue = input.value.trim();
         input.value = ""; // ✅ Clear the input field
@@ -921,6 +876,8 @@
         }
       }
 
+
+      
       function appendBuses(bus) {
         // Clear previous content
         document.getElementById("Buses").innerHTML = "";
@@ -1087,6 +1044,221 @@
           }, 100);
         }
       }
+
+    </script>
+
+    <script type="module">
+      import { fetchToken } from "/firebase.js";
+      // document
+      //   .getElementById("busForm")
+      //   .addEventListener("submit", async (e) => {
+      //     e.preventDefault(); // ✅ Prevent default form submission
+
+      //     const input = document.getElementById("busNumber");
+      //     const inputValue = input.value.trim();
+      //     input.value = ""; // ✅ Clear the input field
+
+      //     try {
+      //       const res = await fetch("/", {
+      //         method: "POST",
+      //         headers: {
+      //           "Content-Type": "application/json",
+      //         },
+      //         body: JSON.stringify({ inputValue }),
+      //       });
+
+      //       if (!res.ok) {
+      //         throw new Error(`Server error: ${res.status}`);
+      //       }
+
+      //       const response = await res.json();
+
+      //       if (!response.success) {
+      //         alert(response.message);
+      //       } else {
+      //         console.log(response.data);
+      //         appendBuses(response.data); // ✅ Make sure this function exists
+
+      //         window.scrollBy({
+      //           top: 200,
+      //           left: 0,
+      //           behavior: "smooth",
+      //         });
+      //       }
+      //     } catch (error) {
+      //       alert(
+      //         "Network error occurred. Please check your internet or try again later."
+      //       );
+      //       console.error("Fetch error:", error);
+      //     }
+      //   });
+
+      // function appendBuses(bus) {
+      //   // Clear previous content
+      //   document.getElementById("Buses").innerHTML = "";
+
+      //   if (bus) {
+      //     // Create stop options
+      //     let stopOptions = "";
+      //     if (bus.routeStops && bus.routeStops.length > 0) {
+      //       stopOptions = bus.routeStops
+      //         .map(
+      //           (stop) =>
+      //             `<option value="${stop._id}">${stop.stopName}</option>`
+      //         )
+      //         .join("");
+      //     } else {
+      //       stopOptions = `<option disabled>No stops available</option>`;
+      //     }
+
+      //     let cardHTML = `
+      //       <div class="card mb-3" style="width: 100%">
+      //         <div class="row g-0">
+      //           <div class="col-md-4">
+      //             <img src="${
+      //               bus.busImages && bus.busImages.length > 0
+      //                 ? bus.busImages[0]
+      //                 : ""
+      //             }" alt="Bus Image will be uploaded soon" class="img-fluid">
+      //           </div>
+      //           <div class="col-md-8">
+      //             <div class="card-body">
+      //               <h5 class="card-title">${bus.route}</h5>
+      //               <a href="/particularBus/${
+      //                 bus._id
+      //               }"  style="text-decoration: none"  >Track Now</a>
+      //               <p class="card-text">Bus Number: ${bus.busNumber}</p>
+      //               <br>
+
+      //               <!-- Button trigger modal -->
+      //               <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#staticBackdrop">
+      //                 Receive Notification
+      //               </button>
+
+      //               <!-- Modal -->
+      //               <div class="modal fade" id="staticBackdrop" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+      //                 <div class="modal-dialog">
+      //                   <div class="modal-content">
+      //                     <div class="modal-header">
+      //                       <h1 class="modal-title fs-5" id="staticBackdropLabel">Select Stop</h1>
+      //                       <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      //                     </div>
+      // <div class="modal-body">
+      //   <div id="stopMap" class="position-relative" style="height: 300px; background: #f0f8ff; border: 1px solid #ccc; border-radius: 10px;">
+      //     <!-- Markers will be added dynamically here -->
+      //   </div>
+      //   <div class="modal-footer mt-3">
+      //     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      //     <button type="button" class="btn btn-primary" id="informMeBtn" disabled>Inform Me</button>
+      //   </div>
+      // </div>
+
+      //                   </div>
+      //                 </div>
+      //               </div>
+
+      //             </div>
+      //           </div>
+      //         </div>
+      //       </div>
+      //     `;
+
+      //     document.getElementById("Buses").innerHTML = cardHTML;
+
+      //     setTimeout(() => {
+      //       const mapContainer = document.getElementById("stopMap");
+      //       const informBtn = document.getElementById("informMeBtn");
+
+      //       const stopPositions = [];
+      //       mapContainer.innerHTML = "";
+
+      //       if (bus.routeStops && bus.routeStops.length > 0) {
+      //         const centerX = 50;
+      //         const centerY = 50;
+      //         const radius = 35;
+      //         const totalStops = bus.routeStops.length;
+
+      //         bus.routeStops.forEach((stop, index) => {
+      //           const angle = (2 * Math.PI * index) / totalStops;
+      //           const x = centerX + radius * Math.cos(angle);
+      //           const y = centerY + radius * Math.sin(angle);
+
+      //           const marker = document.createElement("div");
+      //           marker.classList.add("map-marker");
+      //           marker.innerHTML = `
+      //         <svg viewBox="0 0 24 24">
+      //           <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38
+      //             0-2.5-1.12-2.5-2.5s1.12-2.5
+      //             2.5-2.5 2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"/>
+      //         </svg>
+      //       <div class="stop-label">
+      //   <div class="stop-number">S${index + 1}</div>
+      //   ${stop.stopName}
+      // </div>
+
+      //       `;
+
+      //           marker.dataset.stopId = stop._id;
+      //           marker.style.left = `${x}%`;
+      //           marker.style.top = `${y}%`;
+
+      //           stopPositions.push({ x, y });
+
+      //           marker.addEventListener("click", () => {
+      //             document
+      //               .querySelectorAll(".map-marker")
+      //               .forEach((m) => m.classList.remove("active"));
+      //             marker.classList.add("active");
+      //             informBtn.disabled = false;
+      //             informBtn.dataset.stopId = stop._id;
+      //           });
+
+      //           mapContainer.appendChild(marker);
+      //         });
+
+      //         // Draw dotted lines
+      //         const lineSVG = document.createElementNS(
+      //           "http://www.w3.org/2000/svg",
+      //           "svg"
+      //         );
+      //         lineSVG.setAttribute(
+      //           "class",
+      //           "position-absolute top-0 start-0 w-100 h-100"
+      //         );
+      //         lineSVG.style.zIndex = "0";
+
+      //         for (let i = 0; i < stopPositions.length; i++) {
+      //           const curr = stopPositions[i];
+      //           const next = stopPositions[(i + 1) % stopPositions.length]; // loop around
+
+      //           const line = document.createElementNS(
+      //             "http://www.w3.org/2000/svg",
+      //             "line"
+      //           );
+      //           line.setAttribute("x1", `${curr.x}%`);
+      //           line.setAttribute("y1", `${curr.y}%`);
+      //           line.setAttribute("x2", `${next.x}%`);
+      //           line.setAttribute("y2", `${next.y}%`);
+      //           line.setAttribute("stroke", "#007bff");
+      //           line.setAttribute("stroke-width", "2");
+      //           line.setAttribute("stroke-dasharray", "4");
+
+      //           lineSVG.appendChild(line);
+      //         }
+
+      //         mapContainer.appendChild(lineSVG);
+      //       }
+
+      //       informBtn.addEventListener("click", () => {
+      //         const selectedStopId = informBtn.dataset.stopId;
+      //         sendNotificationRequest(selectedStopId, bus._id);
+      //         bootstrap.Modal.getInstance(
+      //           document.getElementById("staticBackdrop")
+      //         ).hide();
+      //       });
+      //     }, 100);
+      //   }
+      // }
 
       async function sendNotificationRequest(stopId, busId) {
         try {
