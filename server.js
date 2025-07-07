@@ -110,10 +110,7 @@ app.use(
   dcRouter
 );
 
-const io = new Server(server, {
-  pingInterval: 10000, // every 10 seconds
-  pingTimeout: 15000, // wait 15s before assuming dead
-});
+const io = new Server(server);
 app.set("io", io); // <-- shared shelf mein rakh diy
 // Object to store busId -> array of socketIds
 let busConnections = {};
@@ -348,6 +345,10 @@ function processQueue(busId) {
 }
 
 const pendingBusOverrides = {}; // store busId => socket.id
+
+setInterval(() => {
+  io.emit("keep-alive", "💓");
+}, 5000); // every 8s
 
 io.use((socket, next) => {
   try {

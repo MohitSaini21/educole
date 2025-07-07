@@ -139,9 +139,8 @@ function handleGeolocationError(error) {
 
 function buildConnection() {
   socket = io({
-    timeout: 15000,
     reconnection: false,
-
+    timeout: 20000,
     query: { role: user.role, liveBusId: bus._id },
   });
 
@@ -703,3 +702,8 @@ function getDistance(lat1, lon1, lat2, lon2) {
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return R * c;
 }
+
+// to keep alive connections
+socket.on("keep-alive", (msg) => {
+  console.log("Heartbeat received:", msg);
+});
