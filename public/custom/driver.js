@@ -139,8 +139,9 @@ function handleGeolocationError(error) {
 
 function buildConnection() {
   socket = io({
+    timeout: 15000,
     reconnection: false,
-    timeout: 20000,
+
     query: { role: user.role, liveBusId: bus._id },
   });
 

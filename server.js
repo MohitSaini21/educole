@@ -110,7 +110,10 @@ app.use(
   dcRouter
 );
 
-const io = new Server(server);
+const io = new Server(server, {
+  pingInterval: 10000, // every 10 seconds
+  pingTimeout: 15000, // wait 15s before assuming dead
+});
 app.set("io", io); // <-- shared shelf mein rakh diy
 // Object to store busId -> array of socketIds
 let busConnections = {};
@@ -846,7 +849,7 @@ io.on("connection", (socket) => {
     console.log(`📡 stopStreaming received for bus: ${busId}`);
   });
 
-  // Send Notifcation 
+  // Send Notifcation
   socket.on(
     "sendNotificiation",
     async ({ stopId, status, busId, distance }, callback) => {
@@ -920,8 +923,7 @@ io.on("connection", (socket) => {
     }
   );
 
-
-  // Campus Notification 
+  // Campus Notification
   socket.on("campusEvent", async ({ campus, event, busId }, callback) => {
     try {
       if (!campus || !event || !busId) {
