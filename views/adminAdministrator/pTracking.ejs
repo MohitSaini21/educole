@@ -345,7 +345,7 @@
         if (response.data && Object.keys(response.data.reachedStops || {}).length > 0) {
   updateStopsCoveredTable(response.data.reachedStops);
 }
-if(response.data.eventTimeline.length>0)[
+if(response.data.eventTimeline?.length>0)[
   updateEventTimelineTable(response.data.eventTimeline)
 ]
 

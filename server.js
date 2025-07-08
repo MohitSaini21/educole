@@ -965,27 +965,6 @@ io.on("connection", (socket) => {
         .select("fcmToken stop stopName busId")
         .populate("busId", "busNumber");
 
-      if (!activeTokens.length) {
-        return callback(true); // ✅ No tokens to notify, but not an error
-      }
-
-      // 2. Build message
-      const title = "Campus Update";
-      const busNumber = activeTokens[0]?.busId?.busNumber || "Bus";
-
-      const statusMessages = {
-        Entered: `🚌 ${busNumber} has entered ${campus}`,
-        Exited: `🚌 ${busNumber} has exited ${campus}`,
-      };
-
-      const message =
-        statusMessages[event] || `Bus status update for ${campus}`;
-
-      // 3. Send push notification
-      for (const entry of activeTokens) {
-        await sendNotificationToClient(entry.fcmToken, title, message);
-      }
-
       // ✅ 4. Update in-memory eventTimeline
       const timeString = moment().tz("Asia/Kolkata").format("hh:mm A");
 
@@ -1006,6 +985,27 @@ io.on("connection", (socket) => {
       console.log(
         `📌 Event logged: ${event} ${campus} @ ${timeString} for bus ${busId}`
       );
+
+      if (!activeTokens.length) {
+        return callback(true); // ✅ No tokens to notify, but not an error
+      }
+
+      // 2. Build message
+      const title = "Campus Update";
+      const busNumber = activeTokens[0]?.busId?.busNumber || "Bus";
+
+      const statusMessages = {
+        Entered: `🚌 ${busNumber} has entered ${campus}`,
+        Exited: `🚌 ${busNumber} has exited ${campus}`,
+      };
+
+      const message =
+        statusMessages[event] || `Bus status update for ${campus}`;
+
+      // 3. Send push notification
+      for (const entry of activeTokens) {
+        await sendNotificationToClient(entry.fcmToken, title, message);
+      }
 
       callback(true); // ✅ Completed successfully
     } catch (err) {

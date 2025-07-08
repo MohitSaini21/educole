@@ -99,7 +99,6 @@ export default async function saveLogs(busObject) {
 
     if (Array.isArray(eventsData) && eventsData.length > 0) {
       log.events.push(...eventsData);
-      busObject.eventTimeline = [];
     }
 
     await log.save();
