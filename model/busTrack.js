@@ -11,57 +11,61 @@ const stopLogSchema = new Schema({
   eEveningTime: String,
 });
 
-const busActivityLogSchema = new Schema(
-  {
-    bus: { type: Schema.Types.ObjectId, ref: "Bus", required: true },
+const busActivityLogSchema = new Schema({
+  bus: { type: Schema.Types.ObjectId, ref: "Bus", required: true },
 
-    stops: [stopLogSchema], // Array of stop logs
-    path: [
-      {
-        lat: { type: Number, required: true },
-        lon: { type: Number, required: true },
-      },
-    ],
-    events: [
-      {
-        campus: {
-          type: String,
-          rquired: true,
-        },
-        event: { type: String, enum: ["Entered", "Exited"], required: true },
+  stops: [stopLogSchema], // Array of stop logs
 
-        timestamp: { type: String, required: true },
-      },
-    ],
-    morningSnap: {
-      reading: {
-        type: Number,
-      },
-      image: {
-        type: String, // URL or path to uploaded image
-        required: false,
-      },
-      takenAt: {
-        type: String,
-      },
+  logDate: {
+    type: String, // format: "YYYY-MM-DD"
+    required: true,
+  },
+
+  path: [
+    {
+      lat: { type: Number, required: true },
+      lon: { type: Number, required: true },
     },
-    eveningSnap: {
-      reading: {
-        type: Number,
-      },
-      image: {
-        type: String, // URL or path to uploaded image
-        required: false,
-      },
-      takenAt: {
+  ],
+  events: [
+    {
+      campus: {
         type: String,
+        rquired: true,
       },
+      event: { type: String, enum: ["Entered", "Exited"], required: true },
+
+      timestamp: { type: String, required: true },
+    },
+  ],
+  morningSnap: {
+    reading: {
+      type: Number,
+    },
+    image: {
+      type: String, // URL or path to uploaded image
+      required: false,
+    },
+    takenAt: {
+      type: String,
     },
   },
-  { timestamps: true }
-);
+  eveningSnap: {
+    reading: {
+      type: Number,
+    },
+    image: {
+      type: String, // URL or path to uploaded image
+      required: false,
+    },
+    takenAt: {
+      type: String,
+    },
+  },
+});
 
 const BusActivityLog = model("BusActivityLog", busActivityLogSchema);
 
-busActivityLogSchema.index({ bus: 1, createdAt: 1 }, { unique: true });
+BusActivityLogSchema.index({ bus: 1, logDate: 1 }, { unique: true });
+
 export default BusActivityLog;

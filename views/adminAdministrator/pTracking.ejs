@@ -365,7 +365,7 @@ if(response.data.eventTimeline.length>0)[
           if (Object.keys(data.busObject.reachedStops || {}).length > 0) {
   updateStopsCoveredTable(data.busObject.reachedStops);
 }
-if(data.busObject.eventTimeline.length>0){
+if(data.busObject.eventTimeline?.length>0){
   updateEventTimelineTable(data.busObject.eventTimeline)
 
   

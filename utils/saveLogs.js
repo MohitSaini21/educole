@@ -15,28 +15,19 @@ export default async function saveLogs(busObject) {
     }
 
     const busId = new mongoose.Types.ObjectId(busObject.busId);
-    const todayStartIST = moment().tz("Asia/Kolkata").startOf("day");
-    const todayEndIST = moment().tz("Asia/Kolkata").endOf("day");
 
-    const todayStartUTC = todayStartIST.clone().utc().toDate();
-    const todayEndUTC = todayEndIST.clone().utc().toDate();
-
-    console.log(
-      "🔍 Looking for logs from",
-      todayStartUTC.toISOString(),
-      "to",
-      todayEndUTC.toISOString()
-    );
-
+    // 👇 This is the magic: one fixed string date for India
+    const logDateIST = moment().tz("Asia/Kolkata").format("YYYY-MM-DD");
 
     const log = await BusActivityLog.findOneAndUpdate(
       {
         bus: busId,
-        createdAt: { $gte: todayStartUTC, $lte: todayEndUTC }, // ✅ Fixed this line
+        logDate: logDateIST, // 🧠 match by manual India-based day
       },
       {
         $setOnInsert: {
           bus: busId,
+          logDate: logDateIST,
           stops: [],
           path: [],
           events: [],
