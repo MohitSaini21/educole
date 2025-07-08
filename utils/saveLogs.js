@@ -15,15 +15,24 @@ export default async function saveLogs(busObject) {
     }
 
     const busId = new mongoose.Types.ObjectId(busObject.busId);
+    const todayStartIST = moment().tz("Asia/Kolkata").startOf("day");
+    const todayEndIST = moment().tz("Asia/Kolkata").endOf("day");
 
-    const todayStart = moment().tz("Asia/Kolkata").startOf("day").toDate();
-    const todayEnd = moment().tz("Asia/Kolkata").endOf("day").toDate();
+    const todayStartUTC = todayStartIST.clone().utc().toDate();
+    const todayEndUTC = todayEndIST.clone().utc().toDate();
 
-    // ⛔ Use upsert + atomic update to prevent duplication
+    console.log(
+      "🔍 Looking for logs from",
+      todayStartUTC.toISOString(),
+      "to",
+      todayEndUTC.toISOString()
+    );
+
+
     const log = await BusActivityLog.findOneAndUpdate(
       {
         bus: busId,
-        createdAt: { $gte: todayStart, $lte: todayEnd },
+        createdAt: { $gte: todayStartUTC, $lte: todayEndUTC }, // ✅ Fixed this line
       },
       {
         $setOnInsert: {

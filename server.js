@@ -146,33 +146,61 @@ function deleteFileIfExists(relativePath, label = "") {
     }
   }
 }
-cron.schedule("0 0 * * *", async () => {
-  console.log("🕛 12:00 AM: Clearing lastEvaluated memory...");
+cron.schedule(
+  "0 0 * * *", // Scheduled for 12:00 AM IST
+  async () => {
+    const currentTimeIST = moment()
+      .tz("Asia/Kolkata")
+      .format("YYYY-MM-DD HH:mm:ss");
+    console.log(`⏰ Cron triggered at (IST): ${currentTimeIST}`);
 
-  for (const busId in lastEvaluated) {
-    delete lastEvaluated[busId];
+    console.log("🕛 12:00 AM IST: Clearing lastEvaluated memory...");
+
+    for (const busId in lastEvaluated) {
+      delete lastEvaluated[busId];
+    }
+
+    console.log("🧹 Cleared all entries from lastEvaluated");
+
+    console.log("🧹 Running cleanup for old BusActivityLogs");
+
+    const cutoffDate = new Date(Date.now() - 24 * 60 * 60 * 1000); // 10 days ago
+
+    const oldLogs = await BusActivityLog.find({
+      createdAt: { $lt: cutoffDate },
+    });
+
+    for (const log of oldLogs) {
+      deleteFileIfExists(log.morningSnap?.image, "Morning Snap");
+      deleteFileIfExists(log.eveningSnap?.image, "Evening Snap");
+
+      await log.deleteOne();
+      console.log(`✅ Deleted BusActivityLog: ${log._id}`);
+    }
+
+    console.log("✅ Cleanup finished.");
+  },
+  {
+    timezone: "Asia/Kolkata",
   }
-
-  console.log("🧹 Cleared all entries from lastEvaluated");
-
-  console.log("🧹 Running cleanup for old BusActivityLogs");
-
-  const cutoffDate = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000); // 10 days ago
-
-  const oldLogs = await BusActivityLog.find({ createdAt: { $lt: cutoffDate } });
-
-  for (const log of oldLogs) {
-    deleteFileIfExists(log.morningSnap?.image, "Morning Snap");
-    deleteFileIfExists(log.eveningSnap?.image, "Evening Snap");
-
-    await log.deleteOne();
-    console.log(`✅ Deleted BusActivityLog: ${log._id}`);
-  }
-
-  console.log("✅ Cleanup finished.");
-});
+);
 
 // Cron Jobs
+
+// cron Job for testing
+// Run every 1 minute in IST (good for testing)
+cron.schedule(
+  "*/1 * * * *",
+  async () => {
+    const currentTimeIST = moment()
+      .tz("Asia/Kolkata")
+      .format("YYYY-MM-DD HH:mm:ss");
+    console.log(`🧪 Minute Cron Test @ ${currentTimeIST}`);
+  },
+  {
+    timezone: "Asia/Kolkata",
+  }
+);
 
 //  NewArch Based Code
 
@@ -213,26 +241,26 @@ function addTask(task) {
 const TASK_TIMEOUT = 10000; // from 4000ms
 
 // Ineterval to Provess Watitign Area
-setInterval(() => {
-  if (availableWorkers.length === 0) return;
+// setInterval(() => {
+//   if (availableWorkers.length === 0) return;
 
-  const busId = [...waitingArea][0];
-  if (busId) {
-    waitingArea.delete(busId);
-    processQueue(busId);
-  }
-}, 500); // Every 500ms
+//   const busId = [...waitingArea][0];
+//   if (busId) {
+//     waitingArea.delete(busId);
+//     processQueue(busId);
+//   }
+// }, 500); // Every 500ms
 
-// To improve Memeory
-setInterval(() => {
-  for (const [busId, queue] of taskQueues) {
-    if (queue.length === 0 && !isProcessing.get(busId)) {
-      taskQueues.delete(busId);
-      isProcessing.delete(busId);
-      waitingArea.delete(busId);
-    }
-  }
-}, 10 * 60 * 1000); // Every 10 mins
+// // To improve Memeory
+// setInterval(() => {
+//   for (const [busId, queue] of taskQueues) {
+//     if (queue.length === 0 && !isProcessing.get(busId)) {
+//       taskQueues.delete(busId);
+//       isProcessing.delete(busId);
+//       waitingArea.delete(busId);
+//     }
+//   }
+// }, 10 * 60 * 1000); // Every 10 mins
 
 function processQueue(busId) {
   if (isProcessing.get(busId)) return;
