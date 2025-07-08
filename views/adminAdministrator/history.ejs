@@ -112,9 +112,9 @@
               <div class="container">
                 <h6>
                   <p>
-                    Bus Record for <%= bus.busNumber %> on <%=
-                    moment(busLog.createdAt).format("DD-MM-YYYY") %>
+                    Bus Record for <%= bus.busNumber %> on <%= moment(busLog.logDate, "YYYY-MM-DD").format("DD-MM-YYYY") %>
                   </p>
+                  
                 </h6>
                 <br />
                 <ul class="nav nav-pills mb-3" id="pills-tab" role="tablist">

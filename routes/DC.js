@@ -769,8 +769,7 @@ router.get(
 
       const currentIST = moment().tz("Asia/Kolkata");
 
-      const todayStart = currentIST.clone().startOf("day").toDate(); // Start of the day in IST
-      const todayEnd = currentIST.clone().endOf("day").toDate(); // End of the day in IST
+      const logDate = currentIST.format("YYYY-MM-DD");
 
       const targetTime = currentIST.clone().startOf("day").add(14, "hours"); // 2 PM IST
       const isMorning = currentIST.hour() < 14;
@@ -780,7 +779,7 @@ router.get(
       // ✅ Updated: Use createdAt instead of `date` field
       const activity = await BusActivityLog.findOne({
         bus: busId,
-        createdAt: { $gte: todayStart, $lte: todayEnd },
+        logDate: logDate,
       });
 
       if (
@@ -849,8 +848,8 @@ router.post(
       // Get start and end of the day in IST
 
       const currentIST = moment().tz("Asia/Kolkata");
-      const todayStart = moment().tz("Asia/Kolkata").startOf("day").toDate();
-      const todayEnd = moment().tz("Asia/Kolkata").endOf("day").toDate();
+
+      const logDate = currentIST.format("YYYY-MM-DD");
 
       const isMorning = currentIST.hour() < 14;
       console.log("Current hour:", currentIST.hour());
@@ -859,11 +858,17 @@ router.post(
       // एक्टिविटी लॉग ढूँढो या नया बनाओ
       let activity = await BusActivityLog.findOne({
         bus: busId,
-        createdAt: { $gte: todayStart, $lte: todayEnd },
+        logDate: logDate,
       });
 
       if (!activity) {
-        activity = new BusActivityLog({ bus: busId });
+        activity = new BusActivityLog({
+          bus: busId,
+          logDate: logDate, // ✅ must include for future lookups
+          stops: [],
+          path: [],
+          events: [],
+        });
       }
 
       // इमेज का सिर्फ रिलेटिव पाथ स्टोर करो

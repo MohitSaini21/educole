@@ -231,40 +231,44 @@ router.get("/gridView", async (req, res) => {
 });
 
 router.get("/particularBusLive/:id", async (req, res) => {
-  let bus = await Bus.findById(req.params.id)
-    .populate("driver", "name phone")
-    .populate("conductor", "name phone");
+  try {
+    const busId = req.params.id;
 
-  if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
-    return res.status(400).json({ message: "❌ Invalid bus ID" });
-  }
+    if (!mongoose.Types.ObjectId.isValid(busId)) {
+      return res.status(400).json({ message: "❌ Invalid bus ID" });
+    }
 
-  const user = await CORE.findById(req.user.id);
+    const bus = await Bus.findById(busId)
+      .populate("driver", "name phone")
+      .populate("conductor", "name phone");
 
-  const indiaToday = moment().tz("Asia/Kolkata").startOf("day");
+    if (!bus) {
+      return res.status(404).send("❌ Bus not found");
+    }
 
-  const startOfDayUTC = indiaToday.toDate();
-  const endOfDayUTC = indiaToday.clone().endOf("day").toDate();
+    const user = await CORE.findById(req.user.id);
+    if (!user) {
+      res.clearCookie("authToken");
+      res.clearCookie("fcmTokenExpiry");
+      return res.redirect("/coreLogin");
+    }
 
-  const busLog = await BusActivityLog.findOne({
-    bus: bus._id,
-    createdAt: {
-      $gte: startOfDayUTC,
-      $lte: endOfDayUTC,
-    },
-  });
+    // Get today's date in India time
+    const logDateIST = moment().tz("Asia/Kolkata").format("YYYY-MM-DD");
 
-  if (user) {
+    const busLog = await BusActivityLog.findOne({
+      bus: bus._id,
+      logDate: logDateIST, // ✅ match by logDate now
+    });
+
     return res.render("adminAdministrator/pTracking.ejs", {
       bus,
       user,
       busLog,
-      moment,
     });
-  } else {
-    res.clearCookie("authToken"); // clear the correct cookie
-    res.clearCookie("fcmTokenExpiry");
-    return res.redirect("/coreLogin");
+  } catch (err) {
+    console.error("GET /particularBusLive error:", err.message);
+    return res.status(500).send("Internal Server Error");
   }
 });
 
@@ -357,20 +361,13 @@ router.get("/particularHistory/:id", async (req, res) => {
     let busLog = null;
 
     if (requestedDate) {
-      // Search by date (00:00 to 23:59)
-      const startOfDay = moment(requestedDate, "YYYY-MM-DD")
-        .startOf("day")
-        .toDate();
-      const endOfDay = moment(requestedDate, "YYYY-MM-DD")
-        .endOf("day")
-        .toDate();
-
+      // 🔍 Directly search by logDate
       busLog = await BusActivityLog.findOne({
         bus: id,
-        createdAt: { $gte: startOfDay, $lte: endOfDay },
+        logDate: requestedDate, // Format: "YYYY-MM-DD"
       });
     } else {
-      // No date provided — get the latest
+      // 📦 Get the latest log (based on createdAt if needed)
       busLog = await BusActivityLog.findOne({ bus: id }).sort({
         createdAt: -1,
       });

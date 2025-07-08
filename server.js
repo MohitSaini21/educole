@@ -189,18 +189,18 @@ cron.schedule(
 
 // cron Job for testing
 // Run every 1 minute in IST (good for testing)
-cron.schedule(
-  "*/1 * * * *",
-  async () => {
-    const currentTimeIST = moment()
-      .tz("Asia/Kolkata")
-      .format("YYYY-MM-DD HH:mm:ss");
-    console.log(`🧪 Minute Cron Test @ ${currentTimeIST}`);
-  },
-  {
-    timezone: "Asia/Kolkata",
-  }
-);
+// cron.schedule(
+//   "*/1 * * * *",
+//   async () => {
+//     const currentTimeIST = moment()
+//       .tz("Asia/Kolkata")
+//       .format("YYYY-MM-DD HH:mm:ss");
+//     console.log(`🧪 Minute Cron Test @ ${currentTimeIST}`);
+//   },
+//   {
+//     timezone: "Asia/Kolkata",
+//   }
+// );
 
 //  NewArch Based Code
 
