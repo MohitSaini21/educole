@@ -16,8 +16,7 @@
     <link rel="stylesheet" href="/assets/vendors/css/vendor.bundle.base.css" />
     <!-- endinject -->
     <!-- Plugin css for this page -->
- 
-    
+
     <!-- End plugin css for this page -->
     <!-- inject:css -->
     <!-- endinject -->
@@ -112,9 +111,9 @@
               <div class="container">
                 <h6>
                   <p>
-                    Bus Record for <%= bus.busNumber %> on <%= moment(busLog.logDate, "YYYY-MM-DD").format("DD-MM-YYYY") %>
+                    Bus Record for <%= bus.busNumber %> on <%=
+                    moment(busLog.logDate, "YYYY-MM-DD").format("DD-MM-YYYY") %>
                   </p>
-                  
                 </h6>
                 <br />
                 <ul class="nav nav-pills mb-3" id="pills-tab" role="tablist">
@@ -285,10 +284,9 @@
                       <div class="col-lg-12 grid-margin stretch-card">
                         <div class="card">
                           <div class="card-body">
-                            <h4 class="card-title">Stops Covered</h4>
+                            <h4 class="card-title">Campus Events</h4>
 
                             <div class="table-responsive mt-4">
-                              <h5 class="text-center mb-3">Campus Events</h5>
                               <table class="table table-bordered text-center">
                                 <thead class="thead-dark">
                                   <tr>
@@ -500,7 +498,6 @@
     <!-- endinject -->
     <!-- Plugin js for this page -->
 
-    
     <!-- End plugin js for this page -->
     <!-- inject:js -->
     <script src="/assets/js/off-canvas.js"></script>

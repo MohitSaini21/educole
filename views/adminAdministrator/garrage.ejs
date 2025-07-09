@@ -391,6 +391,8 @@ function ChangeStatus(param) {
       document.getElementById("loader").style.display = "flex";
       fetch("/admin/changeStatus", {
         method: "POST",
+        credentials: "same-origin",
+
         headers: {
           "Content-Type": "application/json",
         },

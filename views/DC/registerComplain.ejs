@@ -209,7 +209,8 @@ const user = <%- JSON.stringify(user) %>;
           try {
             const response = await fetch("/DC/registerComplain", {
               method: "POST",
-              credentials:true,
+              credentials: "same-origin",
+
               body: formData,
             });
     

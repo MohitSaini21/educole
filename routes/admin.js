@@ -367,9 +367,9 @@ router.get("/particularHistory/:id", async (req, res) => {
         logDate: requestedDate, // Format: "YYYY-MM-DD"
       });
     } else {
-      // 📦 Get the latest log (based on createdAt if needed)
+      // 📦 Get the latest log based on logDate
       busLog = await BusActivityLog.findOne({ bus: id }).sort({
-        createdAt: -1,
+        logDate: -1,
       });
     }
 

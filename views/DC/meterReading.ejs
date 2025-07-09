@@ -255,6 +255,8 @@ if(meterForm){
   try {
     const response = await fetch("/DC/meterReading", {
       method: "POST",
+      credentials: "same-origin",
+
       body: formData, // ✅ Content-Type को खुद ब्राउज़र सेट करेगा
     });
 
