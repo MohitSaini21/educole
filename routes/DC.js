@@ -214,7 +214,7 @@ router.post(
     } catch (error) {
       console.error("🚨 ओडोमीटर अपडेट करते समय त्रुटि:", error);
       return res.status(500).json({
-        message: "❌ कुछ गलत हो गया। कृपया बाद में पुनः प्रयास करें।",
+        message: error.message,
       });
     }
   }

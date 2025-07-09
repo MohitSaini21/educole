@@ -883,9 +883,8 @@
                 <div class="col-md-8">
                   <div class="card-body">
                     <h5 class="card-title">${bus.route}</h5>
-                    <a href="/particularBus/${
-                      bus._id
-                    }"  style="text-decoration: none"  >Track Now</a>
+               <a href="/particularBus/${bus._id.toString()}" style="text-decoration: none">Track Now</a>
+
                     <p class="card-text">Bus Number: ${bus.busNumber}</p>
                     <br>
 
@@ -1010,7 +1009,7 @@
 
             informBtn.addEventListener("click", () => {
               const selectedStopId = informBtn.dataset.stopId;
-              sendNotificationRequest(selectedStopId, bus._id);
+              sendNotificationRequest(selectedStopId, bus._id.toString());
               bootstrap.Modal.getInstance(
                 document.getElementById("staticBackdrop")
               ).hide();

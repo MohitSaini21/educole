@@ -86,7 +86,6 @@ router.post("/", async (req, res) => {
   }
 });
 
-
 router.patch("/toggleFCM/:id", async (req, res) => {
   try {
     const { id } = req.params;
@@ -188,6 +187,14 @@ router.post("/saveToken", async (req, res) => {
         success: false,
         message:
           "Missing required fields: token, stopId, busId, createdAt, or expireDate.",
+      });
+    }
+
+    // ✅ Validate busId
+    if (!mongoose.Types.ObjectId.isValid(busId)) {
+      return res.json({
+        success: false,
+        message: "Invalid busId format. Must be a valid MongoDB ObjectId.",
       });
     }
 
