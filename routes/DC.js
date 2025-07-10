@@ -66,7 +66,7 @@ function checkUserExistenceAndRedirect(excludeFields = []) {
 
       if (!worker) {
         res.clearCookie("authToken");
-        res.clearCookie("fcmTokenExpiry");
+        res.clearCookie("fcmTokenExpiry");  
         return res.redirect("/driverConductorLogin");
       }
 

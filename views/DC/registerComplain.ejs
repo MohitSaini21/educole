@@ -209,7 +209,8 @@ const user = <%- JSON.stringify(user) %>;
           try {
             const response = await fetch("/DC/registerComplain", {
               method: "POST",
-              credentials: "same-origin",
+           
+              
 
               body: formData,
             });
@@ -232,7 +233,10 @@ document.getElementById("loader").style.display = "none";
                 error.message.includes("Unexpected token '<'") ||
                 error.message.includes("position 0") // Firefox/Edge sometimes
               ) {
-                window.location.href = "/DC";
+                // window.location.href = "/DC";
+
+                console.log(error.message)
+                alert(error.message)
                 return;
               }
             console.error("❌ नेटवर्क त्रुटि:", error);
