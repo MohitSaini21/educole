@@ -13,6 +13,7 @@
       rel="stylesheet"
       href="/assets/vendors/mdi/css/materialdesignicons.min.css"
     />
+    <link rel="stylesheet" href="/assets/loader.css" />
     <link rel="stylesheet" href="/assets/vendors/css/vendor.bundle.base.css" />
     <!-- endinject -->
     <!-- Plugin css for this page -->
@@ -339,16 +340,17 @@
 
       socket.emit("getObject", { busId: bus._id }, function (response) {
 
-        const tbody = document.querySelector("#stops-covered tbody");
-          document.getElementById("event-timeline-body").innerHTML=""
-          tbody.innerHTML=""
         console.log(response)
         if (response.data && Object.keys(response.data.reachedStops || {}).length > 0) {
-  updateStopsCoveredTable(response.data.reachedStops);
-}
-if(response.data?.eventTimeline?.length>0)[
-  updateEventTimelineTable(response.data.eventTimeline)
-]
+          const tbody = document.querySelector("#stops-covered tbody");
+          tbody.innerHTML=""
+          updateStopsCoveredTable(response.data.reachedStops);
+        }
+        if(response.data?.eventTimeline?.length>0){
+
+          document.getElementById("event-timeline-body").innerHTML="";
+  updateEventTimelineTable(response.data.eventTimeline);
+      }
 
       });
 
@@ -356,14 +358,19 @@ if(response.data?.eventTimeline?.length>0)[
 
       socket.on("busUpdate", function (data) {
         console.log(data);
-        if(isFirst){
+   
+        if (data && data.busObject) {
+
+
+          if (Object.keys(data.busObject.reachedStops || {}).length > 0) {
+
+            if(isFirst){
           const tbody = document.querySelector("#stops-covered tbody");
-          document.getElementById("event-timeline-body").innerHTML=""
+
+          
           tbody.innerHTML=""
           isFirst=false
         }
-        if (data && data.busObject) {
-          if (Object.keys(data.busObject.reachedStops || {}).length > 0) {
   updateStopsCoveredTable(data.busObject.reachedStops);
 }
 if(data.busObject.eventTimeline?.length>0){

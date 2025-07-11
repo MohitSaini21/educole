@@ -146,44 +146,108 @@ function deleteFileIfExists(relativePath, label = "") {
     }
   }
 }
+
+
 cron.schedule(
-  "0 0 * * *", // Scheduled for 12:00 AM IST
+  "0 0 * * *", // Every day at 12:00 AM IST
   async () => {
-    const currentTimeIST = moment()
-      .tz("Asia/Kolkata")
-      .format("YYYY-MM-DD HH:mm:ss");
-    console.log(`⏰ Cron triggered at (IST): ${currentTimeIST}`);
+    const nowIST = moment().tz("Asia/Kolkata");
 
+    const currentTime = nowIST.format("YYYY-MM-DD HH:mm:ss");
+    console.log(`⏰ Cron triggered at (IST): ${currentTime}`);
+
+    // 🔹 Clear in-memory object used for location checks
     console.log("🕛 12:00 AM IST: Clearing lastEvaluated memory...");
-
     for (const busId in lastEvaluated) {
       delete lastEvaluated[busId];
     }
-
     console.log("🧹 Cleared all entries from lastEvaluated");
 
-    console.log("🧹 Running cleanup for old BusActivityLogs");
+    // 🔹 Delete old logs based on logDate (YYYY-MM-DD format)
+    const cutoffDate = nowIST.clone().subtract(1, "day").format("YYYY-MM-DD");
+    console.log(`🧾 Deleting logs with logDate before: ${cutoffDate}`);
 
-    const cutoffDate = new Date(Date.now() - 24 * 60 * 60 * 1000); // 10 days ago
+    try {
+      const oldLogs = await BusActivityLog.find({
+        logDate: { $lt: cutoffDate },
+      });
 
-    const oldLogs = await BusActivityLog.find({
-      createdAt: { $lt: cutoffDate },
-    });
+      if (oldLogs.length === 0) {
+        console.log("📂 No old logs found to delete.");
+        return;
+      }
 
-    for (const log of oldLogs) {
-      deleteFileIfExists(log.morningSnap?.image, "Morning Snap");
-      deleteFileIfExists(log.eveningSnap?.image, "Evening Snap");
+      console.log(`📁 Found ${oldLogs.length} old logs to delete.`);
 
-      await log.deleteOne();
-      console.log(`✅ Deleted BusActivityLog: ${log._id}`);
+      for (const log of oldLogs) {
+        if (log.morningSnap?.image) {
+          deleteFileIfExists(log.morningSnap.image, "Morning Snap");
+        }
+
+        if (log.eveningSnap?.image) {
+          deleteFileIfExists(log.eveningSnap.image, "Evening Snap");
+        }
+
+        await log.deleteOne();
+        console.log(`✅ Deleted log ID: ${log._id} (logDate: ${log.logDate})`);
+      }
+
+      console.log("🧹 Old logs cleanup complete.");
+    } catch (error) {
+      console.error("❌ Error during cleanup cron job:", error);
     }
-
-    console.log("✅ Cleanup finished.");
   },
   {
     timezone: "Asia/Kolkata",
   }
 );
+
+
+// cron.schedule(
+//   "* * * * *", // Runs every minute
+//   async () => {
+//     const nowIST = moment().tz("Asia/Kolkata");
+//     const currentTime = nowIST.format("YYYY-MM-DD HH:mm:ss");
+//     console.log(`⏰ Cleanup Cron Triggered at: ${currentTime}`);
+
+//     // Get cutoff date (24 hours ago = one full previous day)
+//     const cutoffDate = nowIST.clone().subtract(1, "day").format("YYYY-MM-DD");
+//     console.log(`🧾 Deleting logs with logDate before: ${cutoffDate}`);
+
+//     try {
+//       const oldLogs = await BusActivityLog.find({
+//         logDate: { $lt: cutoffDate }, // logDate is string, so direct comparison
+//       });
+
+//       if (oldLogs.length === 0) {
+//         console.log("📂 No old logs found to delete.");
+//         return;
+//       }
+
+//       console.log(`📁 Found ${oldLogs.length} old logs to delete.`);
+
+//       for (const log of oldLogs) {
+//         if (log.morningSnap?.image) {
+//           deleteFileIfExists(log.morningSnap.image, "Morning Snap");
+//         }
+
+//         if (log.eveningSnap?.image) {
+//           deleteFileIfExists(log.eveningSnap.image, "Evening Snap");
+//         }
+
+//         await log.deleteOne();
+//         console.log(`✅ Deleted log ID: ${log._id} (logDate: ${log.logDate})`);
+//       }
+
+//       console.log("🧹 Old logs cleanup complete.");
+//     } catch (error) {
+//       console.error("❌ Error during cleanup cron job:", error);
+//     }
+//   },
+//   {
+//     timezone: "Asia/Kolkata",
+//   }
+// );
 
 // Cron Jobs
 
