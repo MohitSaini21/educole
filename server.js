@@ -899,7 +899,7 @@ io.on("connection", (socket) => {
         busEval = lastEvaluated[busId] = {
           busId,
           reachedStops: {},
-          lastEvaluations: 0,
+          lastEvaluations: now,
           eventTimeline: [],
           path: [],
         };
