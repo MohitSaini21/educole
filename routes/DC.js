@@ -245,7 +245,7 @@ router.get(
         busQuery.conductor = userId;
       }
 
-      let bus = await Bus.findOne(busQuery).select("_id routeStops").lean();
+      let bus = await Bus.findOne(busQuery).select("_id routeStops status").lean();
 
       if (!bus) {
         return res.status(404).json({ message: "बस की जानकारी नहीं मिली।" });
@@ -257,6 +257,7 @@ router.get(
           status: "out_of_service",
         });
       }
+
       bus.routeStops = bus.routeStops.sort(
         (a, b) => parseInt(a.stopOrder) - parseInt(b.stopOrder)
       );
