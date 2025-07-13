@@ -47,7 +47,13 @@ function connectionDenied(message) {
   }
 }
 
-function areLatLonClose(lat1, lon1, lat2, lon2, tolerance = 0.000015) {
+function areLatLonClose(
+  lat1,
+  lon1,
+  lat2,
+  lon2,
+  tolerance = (tolerance = 0.000009)
+) {
   return Math.abs(lat1 - lat2) < tolerance && Math.abs(lon1 - lon2) < tolerance;
 }
 
