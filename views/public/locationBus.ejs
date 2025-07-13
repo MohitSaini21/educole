@@ -83,6 +83,12 @@
 
 
 
+                        setInterval(() => {
+        socket.emit("💓"); // can be any light event like "ping" or "💓"
+      }, 2000); // Every 5 seconds (you can try 10000 = 10 sec if stable)
+
+
+
                                                                                                                        // Baser layers
                                                                                                                        let googleStreets = L.tileLayer(
                                                                                                                          "http://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}",

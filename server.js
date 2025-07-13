@@ -130,12 +130,10 @@ let lastEvaluated = {}; // { [busId]: timestamp }
 
 // Cron Jobs
 
-const MEDIA_ROOT = path.join(process.cwd(), "public"); // Adjust if needed
-
 function deleteFileIfExists(relativePath, label = "") {
   if (!relativePath) return;
 
-  const fullPath = path.join(MEDIA_ROOT, relativePath);
+  const fullPath = path.join(process.cwd(), "public", relativePath);
 
   if (fs.existsSync(fullPath)) {
     try {
@@ -146,7 +144,6 @@ function deleteFileIfExists(relativePath, label = "") {
     }
   }
 }
-
 
 cron.schedule(
   "0 0 * * *", // Every day at 12:00 AM IST
@@ -201,7 +198,6 @@ cron.schedule(
     timezone: "Asia/Kolkata",
   }
 );
-
 
 // cron.schedule(
 //   "* * * * *", // Runs every minute
@@ -701,6 +697,12 @@ io.on("connection", (socket) => {
     }
   });
 
+  // to keep connection live
+
+  socket.on("💓", () => {
+    // No need to do anything. Just accepting keeps connection alive.
+  });
+
   // allStream
   socket.on("allStream", (callback) => {
     callback(Object.keys(peers));
@@ -904,7 +906,7 @@ io.on("connection", (socket) => {
       }
 
       // 7. Cooldown check — only update every 10s
-      const cooldownPassed = now - busEval.lastEvaluations >= 10000;
+      const cooldownPassed = now - busEval.lastEvaluations >= 10 * 60 * 1000;
       if (cooldownPassed) {
         // Push path update
         busEval.path.push({

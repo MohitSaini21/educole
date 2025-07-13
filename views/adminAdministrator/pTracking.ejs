@@ -7,7 +7,7 @@
       name="viewport"
       content="width=device-width, initial-scale=1, shrink-to-fit=no"
     />
-    <title>Corona Admin</title>
+    <title>waliaglobalacademy</title>
     <!-- plugins:css -->
     <link
       rel="stylesheet"
@@ -15,6 +15,13 @@
     />
     <link rel="stylesheet" href="/assets/loader.css" />
     <link rel="stylesheet" href="/assets/vendors/css/vendor.bundle.base.css" />
+
+
+    <link
+      rel="icon"
+      type="image/x-icon"
+      href="https://waliaglobalacademy.in/wp-content/uploads/2024/06/cropped-walia-global-logo1.jpg"
+    />
     <!-- endinject -->
     <!-- Plugin css for this page -->
   
@@ -277,6 +284,11 @@
   reconnectionDelayMax: 10000,    // Max delay between attempts
   timeout: 20000, 
                               });
+// to keep socket connection alive 
+
+setInterval(() => {
+        socket.emit("💓"); // can be any light event like "ping" or "💓"
+      }, 2000); // Every 5 seconds (you can try 10000 = 10 sec if stable)
 
       // fucntiom to update the row
 
@@ -388,6 +400,8 @@ if(data.busObject.eventTimeline?.length>0){
 
         }
       });
+
+
 
       
 

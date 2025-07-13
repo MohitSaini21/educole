@@ -556,10 +556,7 @@ router.post("/driverRow/:id", async (req, res) => {
     }
 
     // 2. Check if conductorId is being updated AND is different
-    if (
-      updateData.driverId &&
-      updateData.driverId !== oldConductor.driverId
-    ) {
+    if (updateData.driverId && updateData.driverId !== oldConductor.driverId) {
       updateData.isLogged = false; // Mark as not logged
     }
 
@@ -1372,4 +1369,5 @@ router.post("/deleteAdmin", async (req, res) => {
       .json({ done: false, message: "Internal server error." });
   }
 });
+
 export { router as administratorRouter };

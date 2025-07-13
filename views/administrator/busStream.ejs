@@ -121,7 +121,7 @@
                                                               bus: bus._id
                                                             },
                                                             reconnection: true,             // Enable automatic reconnection
-        reconnectionAttempts: Infinity, // Try forever  
+        reconnectionAttempts: Infinity, // Try forever
         reconnectionDelay: 2000,        // Wait 5 seconds before retrying
         reconnectionDelayMax: 5000,    // Max delay between attempts
         timeout: 20000,
@@ -132,6 +132,9 @@
 
                                                                                             }, 5000);
 
+                                                                                            setInterval(() => {
+        socket.emit("💓"); // can be any light event like "ping" or "💓"
+      }, 2000); // Every 5 seconds (you can try 10000 = 10 sec if stable)
                                                                           // Handle receiving the offer and candidates from the server
                                                                           socket.on("bus-offer-and-candidates", ({ offer, candidates }) => {
                                                                             console.log(offer)

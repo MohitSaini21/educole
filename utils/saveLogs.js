@@ -98,8 +98,24 @@ export default async function saveLogs(busObject) {
     }
 
     if (Array.isArray(eventsData) && eventsData.length > 0) {
-      log.events.push(...eventsData);
+      // Ensure log.events is initialized as an array
+      log.events = log.events || [];
+
+      const existingEventStrings = new Set(
+        log.events.map((e) => `${e.campus}-${e.event}-${e.timestamp}`)
+      );
+
+      const uniqueNewEvents = eventsData.filter((newEvent) => {
+        const key = `${newEvent.campus}-${newEvent.event}-${newEvent.timestamp}`;
+        return !existingEventStrings.has(key);
+      });
+
+      if (uniqueNewEvents.length > 0) {
+        log.events.push(...uniqueNewEvents);
+      }
     }
+    
+    
 
     await log.save();
     console.log(`✅ Log saved or updated for bus ${busObject.busId}`);

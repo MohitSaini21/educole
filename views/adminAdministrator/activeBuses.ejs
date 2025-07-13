@@ -25,7 +25,11 @@
     <!-- Layout styles -->
     <link rel="stylesheet" href="/assets/css/style.css" />
     <!-- End layout styles -->
-    <link rel="shortcut icon" href="/assets/images/favicon.png" />
+    <link
+      rel="icon"
+      type="image/x-icon"
+      href="https://waliaglobalacademy.in/wp-content/uploads/2024/06/cropped-walia-global-logo1.jpg"
+    />
   </head>
   <body>
     <div class="container-scroller">
@@ -146,6 +150,10 @@
       timeout: 20000,
           });
 
+
+          setInterval(() => {
+        socket.emit("💓"); // can be any light event like "ping" or "💓"
+      }, 2000); // Every 5 seconds (you can try 10000 = 10 sec if stable)
           // Hide all live buses from DOM
           socket.emit("liveBuses", function (response) {
             if (response.success) {

@@ -36,6 +36,12 @@
       integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
       crossorigin=""
     />
+
+    <link
+    rel="icon"
+    type="image/x-icon"
+    href="https://waliaglobalacademy.in/wp-content/uploads/2024/06/cropped-walia-global-logo1.jpg"
+  />
     <style>
       /* Custom media query for mobile devices */
       @media (max-width: 576px) {
@@ -239,7 +245,7 @@ padding-left: 20px;
       <h3>Demo Show (typical path)</h3>
       <div class="row">
         <div class="col-12 col-md-6 mb-3">
-          <div id="map" style="height: 400px"></div>
+          <iframe  style="height: 400px" width="100%" src="/routingMachine/?busId=<%=bus._id  %>"></iframe>
         </div>
         <div class="col-12 col-md-6">
 
@@ -286,7 +292,7 @@ padding-left: 20px;
       <div class="map_container">
         <div class="map-responsive">
           <iframe
-            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d677604.3574392692!2d77.77941983904826!3d29.431890227220197!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x390afdf565c6bc21%3A0xefb0ce367e3f2602!2sTeerthanker%20Mahaveer%20University!5e1!3m2!1sen!2sin!4v1749635467601!5m2!1sen!2sin"
+          src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3470.299213109534!2d78.35317187413725!3d29.565896241088062!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x390bdb8656ccd0a5%3A0x40f81c5aecc62bc7!2sWalia%20Global%20Academy%2C!5e0!3m2!1sen!2sin!4v1752389009168!5m2!1sen!2sin"
             width="600"
             height="300"
             frameborder="0"
@@ -346,71 +352,71 @@ padding-left: 20px;
                             // Ensure 'bus' is passed correctly from the server
 
 
-                                var map = L.map("map").setView([51.505, -0.09], 30);
-                                       let googleStreets = L.tileLayer(
-                                                                                                    "http://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}",
-                                                                                                    {
-                                                                                                      maxZoom: 20,
-                                                                                                      subdomains: ["mt0", "mt1", "mt2", "mt3"],
-                                                                                                    }
-                                                                                                  );
+//                                 var map = L.map("map").setView([51.505, -0.09], 30);
+//                                        let googleStreets = L.tileLayer(
+//                                                                                                     "http://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}",
+//                                                                                                     {
+//                                                                                                       maxZoom: 20,
+//                                                                                                       subdomains: ["mt0", "mt1", "mt2", "mt3"],
+//                                                                                                     }
+//                                                                                                   );
 
 
-                                                                                                  googleStreets.addTo(map)
+//                                                                                                   googleStreets.addTo(map)
 
-                 // Create fixed markers at start and end
-                 const orderedStops = bus.routeStops
-  .map(stop => ({
-    order: parseInt(stop.stopOrder),
-    latitude: parseFloat(stop.latitude),
-    longitude: parseFloat(stop.longitude)
-  }))
-  .filter(stop => !isNaN(stop.order) && !isNaN(stop.latitude) && !isNaN(stop.longitude))
-  .sort((a, b) => a.order - b.order);
+//                  // Create fixed markers at start and end
+//                  const orderedStops = bus.routeStops
+//   .map(stop => ({
+//     order: parseInt(stop.stopOrder),
+//     latitude: parseFloat(stop.latitude),
+//     longitude: parseFloat(stop.longitude)
+//   }))
+//   .filter(stop => !isNaN(stop.order) && !isNaN(stop.latitude) && !isNaN(stop.longitude))
+//   .sort((a, b) => a.order - b.order);
 
-const startLatLng = L.latLng(orderedStops[0].latitude, orderedStops[0].longitude);
+// const startLatLng = L.latLng(orderedStops[0].latitude, orderedStops[0].longitude);
 
-            const endLatLng = L.latLng(28.82347, 78.66076);
+//             const endLatLng = L.latLng(28.82347, 78.66076);
 
-            L.marker(startLatLng, { title: "Start Point" ,}).addTo(map).bindPopup("Start").openPopup();
-            L.marker(endLatLng, { title: "End Point" }).addTo(map).bindPopup("End");
+//             L.marker(startLatLng, { title: "Start Point" ,}).addTo(map).bindPopup("Start").openPopup();
+//             L.marker(endLatLng, { title: "End Point" }).addTo(map).bindPopup("End");
 
-      let animatedMarker = L.marker(startLatLng, {
-        icon: L.icon({
-          iconUrl: bus.iconPhoto, // Corrected icon URL
-          iconSize: [32, 32], // Adjust icon size if necessary
-          iconAnchor: [16, 16], // Adjust anchor point if needed
-          popupAnchor: [0, -16] // Optional: adjust popup position
-        })
-      }).addTo(map);
+//       let animatedMarker = L.marker(startLatLng, {
+//         icon: L.icon({
+//           iconUrl: bus.iconPhoto, // Corrected icon URL
+//           iconSize: [32, 32], // Adjust icon size if necessary
+//           iconAnchor: [16, 16], // Adjust anchor point if needed
+//           popupAnchor: [0, -16] // Optional: adjust popup position
+//         })
+//       }).addTo(map);
 
-            // Routing control to get the path
-            L.Routing.control({
-              waypoints: [startLatLng, endLatLng],
-              // addWaypoints: false,
-              routeWhileDragging: false,
-              draggableWaypoints: false,
-              createMarker: () => null, // Prevent Routing plugin from auto-adding markers
-              show: false
-            }).addTo(map).on("routesfound", function (e) {
-              const route = e.routes[0].coordinates;
-
-
-
-              route.forEach((coord, index) => {
-                setTimeout(() => {
-                  animatedMarker.slideTo([coord.lat, coord.lng], {
-                    duration: 1000,
-                    keepAtCenter: false
-                  });
+//             // Routing control to get the path
+//             L.Routing.control({
+//               waypoints: [startLatLng, endLatLng],
+//               // addWaypoints: false,
+//               routeWhileDragging: false,
+//               draggableWaypoints: false,
+//               createMarker: () => null, // Prevent Routing plugin from auto-adding markers
+//               show: false
+//             }).addTo(map).on("routesfound", function (e) {
+//               const route = e.routes[0].coordinates;
 
 
 
-                }, 100 * index);
-              });
+//               route.forEach((coord, index) => {
+//                 setTimeout(() => {
+//                   animatedMarker.slideTo([coord.lat, coord.lng], {
+//                     duration: 1000,
+//                     keepAtCenter: false
+//                   });
 
 
-            });
+
+//                 }, 100 * index);
+//               });
+
+
+//             });
             
       window.onload = function () {
         document.getElementById("loader-text").textContent = "loaded";

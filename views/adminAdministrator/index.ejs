@@ -7,7 +7,7 @@
       name="viewport"
       content="width=device-width, initial-scale=1, shrink-to-fit=no"
     />
-    <title>Corona Admin</title>
+    <title>waliaglobalacademy</title>
     <!-- plugins:css -->
     <link
       rel="stylesheet"
@@ -18,14 +18,17 @@
     <!-- endinject -->
     <!-- Plugin css for this page -->
 
-    
     <!-- End plugin css for this page -->
     <!-- inject:css -->
     <!-- endinject -->
     <!-- Layout styles -->
     <link rel="stylesheet" href="/assets/css/style.css" />
     <!-- End layout styles -->
-    <link rel="shortcut icon" href="/assets/images/favicon.png" />
+    <link
+    rel="icon"
+    type="image/x-icon"
+    href="https://waliaglobalacademy.in/wp-content/uploads/2024/06/cropped-walia-global-logo1.jpg"
+  />
 
     <style>
       .card {
@@ -86,7 +89,6 @@
         }
       }
     </style>
-    
   </head>
   <body>
     <div class="container-scroller">
@@ -299,10 +301,6 @@
           <!-- content-wrapper ends -->
           <!-- partial:partials/_footer.html -->
           <%- include('../corePartials/footer.ejs') %>
-         
-
-          
-
           <%-include('../corePartials/loader.ejs') %>
         </div>
         <!-- main-panel ends -->
@@ -314,7 +312,7 @@
     <script src="/assets/vendors/js/vendor.bundle.base.js"></script>
     <!-- endinject -->
     <!-- Plugin js for this page -->
-  
+
     <!-- End plugin js for this page -->
     <!-- inject:js -->
     <script src="/assets/js/off-canvas.js"></script>
@@ -375,85 +373,90 @@
     <script src="/socket.io/socket.io.js"></script>
 
     <script>
-            const user = <%- JSON.stringify(user) %>;
-            const totalCount = <%- totalCount %>; // ✅ Passed from backend
+                        const user = <%- JSON.stringify(user) %>;
+                        const totalCount = <%- totalCount %>; // ✅ Passed from backend
 
-            const socket = io({
-              query: {
-                adminId: user._id
-              },
-              reconnection: true,             // Enable automatic reconnection
-  reconnectionAttempts: Infinity, // Try forever
-  reconnectionDelay: 5000,        // Wait 5 seconds before retrying
-  reconnectionDelayMax: 10000,    // Max delay between attempts
-  timeout: 20000, 
-            });
+                        const socket = io({
+                          query: {
+                            adminId: user._id
+                          },
+                          reconnection: true,             // Enable automatic reconnection
+              reconnectionAttempts: Infinity, // Try forever
+              reconnectionDelay: 5000,        // Wait 5 seconds before retrying
+              reconnectionDelayMax: 10000,    // Max delay between attempts
+              timeout: 20000,
+                        });
 
-            socket.on("connect_error", (err) => {
-        console.error("❌ Socket connect error:", err.message);
-      });
-            // DOM elements for count
-            const liveCount = document.getElementById("live");
-            const offlineCount = document.getElementById("offline");
 
-            // Initialize counters
-            let live = 0;
-            let offline = totalCount;
+                        setInterval(() => {
+        socket.emit("💓"); // can be any light event like "ping" or "💓"
+      }, 2000); // Every 5 seconds (you can try 10000 = 10 sec if stable)
 
-            // 🔌 Request live buses from server
-            socket.emit("liveBuses", function (response) {
-              if (response.success) {
-                const liveBusIds = response.data || [];
+                        socket.on("connect_error", (err) => {
+                    console.error("❌ Socket connect error:", err.message);
+                  });
+                        // DOM elements for count
+                        const liveCount = document.getElementById("live");
+                        const offlineCount = document.getElementById("offline");
 
-                if (liveBusIds.length === 0) {
-                  // ✅ No live buses
-                  live = 0;
-                  offline = totalCount;
-                } else {
-                  live = liveBusIds.length;
-                  offline = totalCount - live;
-                }
+                        // Initialize counters
+                        let live = 0;
+                        let offline = totalCount;
 
-                // Update DOM
-                liveCount.innerText = live;
-                offlineCount.innerText = offline;
+                        // 🔌 Request live buses from server
+                        socket.emit("liveBuses", function (response) {
+                          if (response.success) {
+                            const liveBusIds = response.data || [];
 
-                console.log(`🟢 Live: ${live}, 🔴 Offline: ${offline}`);
-              } else {
-                // Server failed to send data — keep safe fallback
-                live = 0;
-                offline = totalCount;
+                            if (liveBusIds.length === 0) {
+                              // ✅ No live buses
+                              live = 0;
+                              offline = totalCount;
+                            } else {
+                              live = liveBusIds.length;
+                              offline = totalCount - live;
+                            }
 
-                liveCount.innerText = live;
-                offlineCount.innerText = offline;
+                            // Update DOM
+                            liveCount.innerText = live;
+                            offlineCount.innerText = offline;
 
-                console.warn("❌ Could not fetch live buses.");
-              }
-            });
+                            console.log(`🟢 Live: ${live}, 🔴 Offline: ${offline}`);
+                          } else {
+                            // Server failed to send data — keep safe fallback
+                            live = 0;
+                            offline = totalCount;
 
-            // 📈 When a bus comes online
-            socket.on("add", (busId) => {
-              if (live < totalCount) {
-                live++;
-                offline = Math.max(0, totalCount - live);
-              }
+                            liveCount.innerText = live;
+                            offlineCount.innerText = offline;
 
-              liveCount.innerText = live;
-              offlineCount.innerText = offline;
-              console.log(`✅ Bus ${busId} went live. 🟢 Live: ${live}, 🔴 Offline: ${offline}`);
-            });
+                            console.warn("❌ Could not fetch live buses.");
+                          }
+                        });
 
-            // 📉 When a bus goes offline
-            socket.on("remove", (busId) => {
-              if (live > 0) {
-                live--;
-                offline = Math.min(totalCount, totalCount - live);
-              }
+                        // 📈 When a bus comes online
+                        socket.on("add", (busId) => {
+                          if (live < totalCount) {
+                            live++;
+                            offline = Math.max(0, totalCount - live);
+                          }
 
-              liveCount.innerText = live;
-              offlineCount.innerText = offline;
-              console.log(`❌ Bus ${busId} went offline. 🟢 Live: ${live}, 🔴 Offline: ${offline}`);
-            });
+                          liveCount.innerText = live;
+                          offlineCount.innerText = offline;
+                          console.log(`✅ Bus ${busId} went live. 🟢 Live: ${live}, 🔴 Offline: ${offline}`);
+                        });
+
+                        // 📉 When a bus goes offline
+                        socket.on("remove", (busId) => {
+                          if (live > 0) {
+                            live--;
+                            offline = Math.min(totalCount, totalCount - live);
+                          }
+
+                          liveCount.innerText = live;
+                          offlineCount.innerText = offline;
+                          console.log(`❌ Bus ${busId} went offline. 🟢 Live: ${live}, 🔴 Offline: ${offline}`);
+                        });
     </script>
     <!-- Chart.js Library -->
 
@@ -498,7 +501,7 @@
         }
       });
     </script>
-        <script type="module" src="/foreground.js"></script>
+    <script type="module" src="/foreground.js"></script>
     <!-- custom Script -->
   </body>
 </html>

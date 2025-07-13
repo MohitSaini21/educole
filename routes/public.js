@@ -258,14 +258,25 @@ router.post("/saveToken", async (req, res) => {
 
 router.get("/particularBus/:id", async (req, res) => {
   const { id } = req.params;
+
+  // Step 1: Check if it's a valid ObjectId
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return res.status(400).send("Invalid Bus ID");
+  }
+
+  // Step 2: Convert to ObjectId (optional, Mongoose does it internally if valid)
+  const objectId = new mongoose.Types.ObjectId(id);
+
   const bus = await Bus.findById(id)
-    .select("busNumber routeStops iconPhoto route _id") // select only the needed fields
-    .populate("driver", "name phone") // populate driver's name & phone
-    .populate("conductor", "name phone") // populate conductor's name & phone
+    .select("busNumber routeStops iconPhoto route _id")
+    .populate("driver", "name phone")
+    .populate("conductor", "name phone")
     .lean();
 
   if (bus) {
     return res.render("public/particularBus.ejs", { bus });
+  } else {
+    return res.send("Bus not found");
   }
 });
 
