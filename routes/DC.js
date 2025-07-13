@@ -66,7 +66,7 @@ function checkUserExistenceAndRedirect(excludeFields = []) {
 
       if (!worker) {
         res.clearCookie("authToken");
-        res.clearCookie("fcmTokenExpiry");  
+        res.clearCookie("fcmTokenExpiry");
         return res.redirect("/driverConductorLogin");
       }
 
@@ -263,7 +263,7 @@ router.get(
 
       // If bus is operational, return normal data
       res.set("Cache-Control", "no-store");
-      let campuses = ["Nursing College", "TMU"];
+      let campuses = ["waliaglobalacademy"];
       return res.render("DC/goLive.ejs", { user: req.worker, bus, campuses });
     } catch (err) {
       console.error("❌ Error fetching bus:", err);
