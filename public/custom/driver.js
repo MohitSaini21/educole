@@ -108,7 +108,7 @@ setTimeout(() => {
       timeout: 15000,
     }
   );
-}, 5000);
+}, 2000);
 
 function handleGeolocationError(error) {
   const messages = {
