@@ -1217,8 +1217,24 @@ io.on("connection", (socket) => {
 const startServer = async () => {
   try {
     await ConnectDB(
-      "mongodb+srv://mohitsainisaini2680:misbaansari20@cluster0.wjx3j.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
+      "mongodb+srv://educole:educole1234@educole.2cvrvth.mongodb.net/educoleDB?retryWrites=true&w=majority&appName=Educole"
     );
+    const existingAdministrator = await CORE.findOne({ role: "administrator" });
+    if (!existingAdministrator) {
+      await CORE.create({
+        username: "educole",
+        password: "educole123", // you should hash this in real-world apps!
+        role: "administrator",
+
+        administratorId: "ADMTR-1234",
+        isLogged: false,
+        notificationToken: "",
+      });
+      console.log("🧑‍💼 Admin user created in CORE collection.");
+    } else {
+      console.log("✅ Admin user already exists.");
+    }
+
     console.log("✅ MongoDB connected successfully.");
 
     await setAllRouteStops();
