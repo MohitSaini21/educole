@@ -40,6 +40,30 @@ const limiter = rateLimit({
   },
 });
 
+const complaintLimiter = rateLimit({
+  windowMs: 24 * 60 * 60 * 1000, // 24 hours
+  max: 2, // Only 2 requests allowed per day
+  standardHeaders: true, // Include RateLimit-* headers
+  legacyHeaders: false, // Disable X-RateLimit-* headers
+
+  handler: (req, res) => {
+    const retryAfterMs = req.rateLimit?.resetTime
+      ? req.rateLimit.resetTime - Date.now()
+      : 0;
+
+    const secondsLeft = Math.ceil(retryAfterMs / 1000);
+    const hoursLeft = Math.ceil(secondsLeft / 3600); // Convert to hours and round up
+
+    res.status(429).json({
+      success: false,
+      error: "Too many requests",
+      message: `You have exceeded the daily limit. Try again after ${hoursLeft} hour(s).`,
+      retryAfter: secondsLeft,
+      code: 429,
+    });
+  },
+});
+
 router.get("/", (req, res) => {
   return res.render("public/index.ejs");
 });
@@ -444,7 +468,7 @@ router.post("/adminLogin", checkAuthHome, limiter, async (req, res) => {
   }
 });
 
-router.post("/complaints", async (req, res) => {
+router.post("/complaints", complaintLimiter, async (req, res) => {
   try {
     const { complaintType, incidentTime, busNumber, description } = req.body;
 
