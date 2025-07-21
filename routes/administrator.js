@@ -926,6 +926,10 @@ router.post("/delete-bus", async (req, res) => {
     }
 
     // 🔌 Disconnect from socket
+
+    const result = await FCM.deleteMany({ busId: busId });
+    console.log(`${result.deletedCount} tokens deleted.`);
+
     disConnect(req, bus._id);
     console.log("🔌 Socket disconnected for bus.");
 

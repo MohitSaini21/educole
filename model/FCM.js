@@ -9,6 +9,7 @@ const fcmSchema = new mongoose.Schema({
   },
   busId: {
     type: mongoose.Schema.Types.ObjectId,
+    index: true,
     ref: "Bus",
     required: true,
   },
