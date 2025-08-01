@@ -14,11 +14,12 @@ const iceConfig = {
   iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
 };
 
-function connectionDenied(message) {
+function connectionDenied(message, errorType = "gpsApart") {
   cleanupConnection();
-  if (socket) {
+  if (socket && socket.connected) {
     socket.disconnect();
   }
+
   const html = `
     <div class="col-12 grid-margin stretch-card" id="goBack">
       <div class="card">
@@ -29,7 +30,16 @@ function connectionDenied(message) {
             <button class="btn btn-secondary btn-fw">
               <a href="/DC" style="text-decoration: none; color: inherit;">वापस जाएँ</a>
             </button>
-            <button class="btn btn-primary btn-fw" onclick="window.location.href='/DC/goLive'">🔁 फिर से प्रयास करें</button>
+  <button class="btn btn-primary btn-fw"
+    onclick="window.location.href='/DC/goLive'" 
+    ${errorType === "gps" ? "" : "disabled"}>
+    ${
+      errorType === "gps"
+        ? "🔁 फिर से प्रयास करें"
+        : "🔁 फिर से कनेक्ट हो रहा है"
+    }
+  </button>
+
           </div>
         </div>
       </div>
@@ -77,7 +87,7 @@ function saveLocation(position) {
   );
 
   if (isSame) {
-    return baseData;
+    return false;
   }
 
   // ✅ Update previous point and return new data
@@ -95,7 +105,7 @@ setTimeout(() => {
       }
       locationData.bus = bus;
 
-      if (socket) {
+      if (socket && socket.connected) {
         socket.emit("busLocationUpdate", locationData);
       } else {
         buildConnection();
@@ -133,15 +143,18 @@ function handleGeolocationError(error) {
   const { message, suggestion } = messages[error.code] || messages.default;
   console.error("📡 GPS Error:", error.message);
   connectionDenied(
-    `📡 GPS त्रुटि: ${message}<br /><br />📌 सुझाव: ${suggestion}`
+    `📡 GPS त्रुटि: ${message}<br /><br />📌 सुझाव: ${suggestion}`,
+    "gps"
   );
   if (typeof safeSpeakHindi === "function") safeSpeakHindi(suggestion);
 }
 
 function buildConnection() {
   socket = io({
-    reconnection: false,
-    timeout: 20000,
+    reconnection: true, // Enable auto-reconnect
+    reconnectionAttempts: Infinity, // Try reconnecting forever
+    reconnectionDelay: 5000, // Wait 5 seconds between attempts
+    timeout: 20000, // Connection timeout
     query: { role: user.role, liveBusId: bus._id },
   });
 
@@ -189,6 +202,8 @@ function buildConnection() {
     window._wasManuallyRejected = false;
   });
 
+  // Manually Disconnectin Socket Beofore Page is closed and Page si refreshed .
+
   window.addEventListener(
     "beforeunload",
     () => socket?.connected && socket.disconnect()
@@ -213,6 +228,32 @@ function buildConnection() {
 }
 
 function cleanupConnection() {
+  // 🛑 Stop recorder
+  if (recorder?.state === "recording") recorder.stop();
+  // 🛑 Stop camera stream if mediaStream exists
+  if (mediaStream) {
+    mediaStream.getTracks().forEach((track) => {
+      track.stop();
+    });
+    mediaStream = null;
+  }
+
+  // 🧼 Also clean up video element if it exists
+  const videoElement = document.getElementById("driverVideo");
+
+  if (videoElement && videoElement.srcObject) {
+    videoElement.srcObject.getTracks().forEach((track) => {
+      track.stop();
+    });
+    videoElement.srcObject = null;
+    videoElement.removeAttribute("src"); // Optional: extra cleanup
+    videoElement.load(); // Optional: resets the video element
+
+    // 📤 Inform server
+    socket.emit("stopStreaming", { busId: bus._id });
+    socket.emit("streamNotification", { busId: bus._id, about: "stoped" });
+  }
+
   isSharing = false;
   peerConnection?.close();
   peerConnection = null;
@@ -222,18 +263,51 @@ function cleanupConnection() {
 
 function renderStreamingUI() {
   const html = `
-    <div class="col-12 grid-margin stretch-card" id="goAhead">
-      <div class="card">
-        <div class="card-body">
-          <h4 class="card-title">${user.name} (${user.role})</h4>
-          <p class="card-description">बस की लोकेशन साझा करना बंद करने के लिए कृपया <code>चेक्ड आउट</code> बटन पर क्लिक करें।</p>
-          <div class="template-demo">
-            <button class="btn btn-secondary btn-fw"><a href="/DC" style="text-decoration: none; color: black;">चेक्ड आउट</a></button>
-            <button class="btn btn-secondary btn-fw" onclick="toggleStreaming(this)">स्ट्रीमिंग शुरू करें</button>
-          </div>
-        </div>
+<div class="col-12 grid-margin stretch-card" id="goAhead">
+  <div class="card">
+    <div class="card-body text-center">
+      <h4 class="card-title">${user.name} (${user.role})</h4>
+      <p class="card-description">
+        बस की लोकेशन साझा करना बंद करने के लिए कृपया <code>चेक्ड आउट</code> बटन पर क्लिक करें।
+      </p>
+
+      <!-- Wrapper for both buttons -->
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 15px; margin-top: 30px;">
+
+        <!-- 🔴 Circular "Check Out" button -->
+        <a href="/DC" title="Check Out"
+          style="
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background-color: #dc3545;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            font-weight: bold;
+            text-decoration: none;
+            box-shadow: 0 0 15px rgba(220, 53, 69, 0.5);
+            transition: transform 0.25s ease-in-out;
+          "
+          onmouseover="this.style.transform='scale(1.05)'"
+          onmouseout="this.style.transform='scale(1)'">
+          👎<br />चेक्ड आउट
+        </a>
+
+        <!-- 📡 Streaming Button (default Bootstrap style) -->
+        <button onclick="toggleStreaming(this)" class="btn btn-secondary">
+          📡 स्ट्रीमिंग शुरू करें
+        </button>
+
       </div>
     </div>
+  </div>
+</div>
+
+
  <div class="col-md-12 grid-margin stretch-card" id="videoTag" style="height: 60vh; position: relative;">
   <div class="card h-100">
     <div class="card-body p-0" style="height: 100%; position: relative;">
@@ -494,27 +568,27 @@ function zoomOutVframe() {
 }
 
 function stopStreaming(button) {
-  // 🛑 Stop recorder
-  if (recorder?.state === "recording") recorder.stop();
-  // 🛑 Stop camera stream if mediaStream exists
-  if (mediaStream) {
-    mediaStream.getTracks().forEach((track) => {
-      track.stop();
-    });
-    mediaStream = null;
-  }
+  // // 🛑 Stop recorder
+  // if (recorder?.state === "recording") recorder.stop();
+  // // 🛑 Stop camera stream if mediaStream exists
+  // if (mediaStream) {
+  //   mediaStream.getTracks().forEach((track) => {
+  //     track.stop();
+  //   });
+  //   mediaStream = null;
+  // }
 
-  // 🧼 Also clean up video element if it exists
-  const videoElement = document.getElementById("driverVideo");
+  // // 🧼 Also clean up video element if it exists
+  // const videoElement = document.getElementById("driverVideo");
 
-  if (videoElement && videoElement.srcObject) {
-    videoElement.srcObject.getTracks().forEach((track) => {
-      track.stop();
-    });
-    videoElement.srcObject = null;
-    videoElement.removeAttribute("src"); // Optional: extra cleanup
-    videoElement.load(); // Optional: resets the video element
-  }
+  // if (videoElement && videoElement.srcObject) {
+  //   videoElement.srcObject.getTracks().forEach((track) => {
+  //     track.stop();
+  //   });
+  //   videoElement.srcObject = null;
+  //   videoElement.removeAttribute("src"); // Optional: extra cleanup
+  //   videoElement.load(); // Optional: resets the video element
+  // }
 
   // 🧹 Clean peer connection
   cleanupConnection();
@@ -527,10 +601,6 @@ function stopStreaming(button) {
 
   const mapContainer = document.getElementById("videoTag");
   mapContainer.scrollIntoView({ behavior: "smooth", block: "center" });
-
-  // 📤 Inform server
-  socket.emit("stopStreaming", { busId: bus._id });
-  socket.emit("streamNotification", { busId: bus._id, about: "stoped" });
 }
 
 async function collectionIceCandidateInfo() {

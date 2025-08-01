@@ -78,6 +78,84 @@
     max-height: 3000px; /* large enough for content */
     transition: max-height 0.7s ease;
   }
+
+
+
+    .thumb-checkin {
+    width: 90px;
+    height: 90px;
+    border-radius: 50%;
+    font-size: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: auto;
+    position: relative;
+    background-color: #0d6efd;
+    color: white;
+    box-shadow: 0 0 15px rgba(13, 110, 253, 0.5);
+    animation: pulse 1.8s infinite;
+    border: none;
+    font-weight: bold;
+  }
+
+  .thumb-checkin:hover {
+    background-color: #0b5ed7;
+    box-shadow: 0 0 25px rgba(13, 110, 253, 0.7);
+    transform: scale(1.05);
+  }
+
+  .thumb-checkin span {
+    display: none;
+  }
+
+  .thumb-label {
+    margin-top: 10px;
+    text-align: center;
+    font-weight: bold;
+    font-size: 16px;
+    color: #333;
+  }
+
+  @keyframes pulse {
+    0% {
+      box-shadow: 0 0 0 0 rgba(13, 110, 253, 0.7);
+    }
+    70% {
+      box-shadow: 0 0 0 20px rgba(13, 110, 253, 0);
+    }
+    100% {
+      box-shadow: 0 0 0 0 rgba(13, 110, 253, 0);
+    }
+  }
+
+
+  .thumb-checkout {
+  font-size: 2.5rem;
+  text-decoration: none;
+  color: red;
+  background: #ffe5e5;
+  border-radius: 50%;
+  padding: 12px 18px;
+  display: inline-block;
+  box-shadow: 0 4px 8px rgba(255, 0, 0, 0.3);
+  transition: transform 0.2s ease, background 0.3s;
+}
+
+.thumb-checkout:hover {
+  background: red;
+  color: white;
+  transform: scale(1.1);
+}
+
+.thumb-label {
+  text-align: center;
+  font-size: 14px;
+  margin-top: 6px;
+  color: #444;
+  font-weight: 500;
+}
+
     </style>
     
      
@@ -101,20 +179,39 @@
           <div class="content-wrapper">
             <div class="row">
            <!-- LEFT: Real-time Operations -->
-  <div class="col-md-6 grid-margin stretch-card">
-    <div class="card shadow">
-      <div class="card-body text-center">
-        <h4 class="card-title mb-3">🔧 त्वरित संचालन (Quick Actions)</h4>
+<div class="col-md-6 grid-margin stretch-card">
+  <div class="card shadow">
+    <div class="card-body text-center">
+      <h4 class="card-title mb-3">🔧 त्वरित संचालन (Quick Actions)</h4>
 
-        <div class="btn-group-vertical w-100" role="group" style="gap: 12px; max-width: 300px; margin: auto;">
-          <a href="/DC/goLive" class="btn btn-outline-primary btn-lg fw-bold">🚍 चेक इन</a>
-          <a href="/DC/profile" class="btn btn-outline-success btn-lg fw-bold">👤 प्रोफ़ाइल देखें</a>
-          <button class="btn btn-outline-danger btn-lg fw-bold" onclick="handleEmergencyClick()">🚨 आपातकालीन बटन</button>
-          <button class="btn btn-danger btn-lg fw-bold" onclick="Redirect()">🔓 लॉगआउट</button>
-        </div>
+      <div class="d-flex flex-column align-items-center" style="gap: 16px;">
+        <!-- 🟢 ROUND GO LIVE BUTTON -->
+       <a href="/DC/goLive" class="thumb-checkin" title="Check In / Go Live">
+  🚍
+  </a>
+  <div class="thumb-label">चेक इन</div>
+
+        <!-- 👤 PROFILE VIEW -->
+        <a href="/DC/profile" class="btn btn-outline-success btn-lg fw-bold w-100" style="max-width: 300px;">
+          👤 प्रोफ़ाइल देखें
+        </a>
+
+        <!-- 🚨 EMERGENCY -->
+        <button class="btn btn-outline-danger btn-lg fw-bold w-100" onclick="handleEmergencyClick()" style="max-width: 300px;">
+          🚨 आपातकालीन बटन
+        </button>
+
+        <!-- 🔓 LOGOUT -->
+        <button class="btn btn-danger btn-lg fw-bold w-100" onclick="Redirect()" style="max-width: 300px;">
+          🔓 लॉगआउट
+        </button>
       </div>
     </div>
   </div>
+</div>
+
+
+
 
 
   <div class="col-md-6 grid-margin stretch-card">
