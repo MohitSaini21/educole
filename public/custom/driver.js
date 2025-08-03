@@ -1,4 +1,5 @@
 let socket = null;
+let isProvidingLocation = false;
 
 let previousPoint = null;
 window._wasManuallyRejected = false;
@@ -55,6 +56,12 @@ function connectionDenied(message, errorType = "gpsApart") {
     mainRow.innerHTML = "";
     mainRow.appendChild(temp.firstChild);
   }
+
+  setTimeout(() => {
+    if (errorType == "gps" && isProvidingLocation) {
+      window.location.reload();
+    }
+  }, 2000);
 }
 
 function areLatLonClose(lat1, lon1, lat2, lon2, tolerance = 0.000009) {
@@ -87,7 +94,7 @@ function saveLocation(position) {
   );
 
   if (isSame) {
-    return false;
+    return baseData;
   }
 
   // ✅ Update previous point and return new data
@@ -107,6 +114,8 @@ setTimeout(() => {
 
       if (socket && socket.connected) {
         socket.emit("busLocationUpdate", locationData);
+
+        isProvidingLocation = true;
       } else {
         buildConnection();
       }
@@ -265,44 +274,32 @@ function renderStreamingUI() {
   const html = `
 <div class="col-12 grid-margin stretch-card" id="goAhead">
   <div class="card">
-    <div class="card-body text-center">
+    <div class="card-body">
       <h4 class="card-title">${user.name} (${user.role})</h4>
       <p class="card-description">
         बस की लोकेशन साझा करना बंद करने के लिए कृपया <code>चेक्ड आउट</code> बटन पर क्लिक करें।
       </p>
 
-      <!-- Wrapper for both buttons -->
-      <div style="display: flex; flex-direction: column; align-items: center; gap: 15px; margin-top: 30px;">
+      
+    
 
-        <!-- 🔴 Circular "Check Out" button -->
-        <a href="/DC" title="Check Out"
-          style="
-            width: 100px;
-            height: 100px;
-            border-radius: 50%;
-            background-color: #dc3545;
-            color: white;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            font-size: 18px;
-            font-weight: bold;
-            text-decoration: none;
-            box-shadow: 0 0 15px rgba(220, 53, 69, 0.5);
-            transition: transform 0.25s ease-in-out;
-          "
-          onmouseover="this.style.transform='scale(1.05)'"
-          onmouseout="this.style.transform='scale(1)'">
-          👎<br />चेक्ड आउट
-        </a>
-
+      
+      
+      
+      
+      <button class="btn btn-secondary btn-fw">
+      <a href="/DC" style="text-decoration: none; color: inherit;">चेक्ड आउट</a>
+      </button>
+      <br>
+      <br>
+      
+          
         <!-- 📡 Streaming Button (default Bootstrap style) -->
         <button onclick="toggleStreaming(this)" class="btn btn-secondary">
           📡 स्ट्रीमिंग शुरू करें
         </button>
 
-      </div>
+      
     </div>
   </div>
 </div>
