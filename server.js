@@ -849,7 +849,7 @@ io.on("connection", (socket) => {
 
   // updating the distance
 
-  socket.emit("distanceAdding", ({ busId, distanceCovered }) => {
+  socket.on("distanceAdding", ({ busId, distanceCovered }) => {
     distanceCovered = Number(distanceCovered);
     if (Number(distanceCovered) > 0) {
       lastEvaluated[busId].distanceCovered += distanceCovered;

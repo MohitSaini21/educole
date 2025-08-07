@@ -125,36 +125,36 @@ setTimeout(() => {
         }
 
         // let's check is it  time to check the stops proximity
-     if (!lastCampusChecked) lastCampusChecked = Date.now();
-     if (!lastProximityChecked) lastProximityChecked = Date.now();
+        if (!lastCampusChecked) lastCampusChecked = Date.now();
+        if (!lastProximityChecked) lastProximityChecked = Date.now();
 
-     const now = Date.now();
+        const now = Date.now();
 
-     if (now - lastCampusChecked > 10000) {
-       // Every 10 seconds
-       console.log("Time to check campus alert...");
-       checkCampusEvent(locationData.latitude, locationData.longitude);
-       lastCampusChecked = now;
-     }
+        if (now - lastCampusChecked > 10000) {
+          // Every 10 seconds
+          console.log("Time to check campus alert...");
+          checkCampusEvent(locationData.latitude, locationData.longitude);
+          lastCampusChecked = now;
+        }
 
-     if (now - lastProximityChecked > 5000) {
-       // Every 5 seconds
-       checkProximity(
-         locationData.latitude,
-         locationData.longitude,
-         locationData.accuracy
-       );
-       DistanceCover(
-         locationData.latitude,
-         locationData.longitude,
-         locationData.accuracy
-       );
-       lastProximityChecked = now;
-     } else {
-       console.log(
-         "Skipping Frequent Proximities Checking and Events Tracking"
-       );
-     }
+        if (now - lastProximityChecked > 5000) {
+          // Every 5 seconds
+          checkProximity(
+            locationData.latitude,
+            locationData.longitude,
+            locationData.accuracy
+          );
+          DistanceCover(
+            locationData.latitude,
+            locationData.longitude,
+            locationData.accuracy
+          );
+          lastProximityChecked = now;
+        } else {
+          console.log(
+            "Skipping Frequent Proximities Checking and Events Tracking"
+          );
+        }
       } else {
         buildConnection();
       }
@@ -970,9 +970,9 @@ function DistanceCover(lat, lng, accuracy) {
   if (accuracy < 15) {
     const newDistance = getDistance({
       lat1: disPrev.latitude,
-      lng1: disPrev.longitude,
+      lon1: disPrev.longitude,
       lat2: currentPoint.latitude,
-      lng2: currentPoint.longitude,
+      lon2: currentPoint.longitude,
     });
 
     distanceCovered += newDistance;
@@ -984,6 +984,7 @@ function DistanceCover(lat, lng, accuracy) {
     if (lastDistanceTimeStamp) {
       const timeElapsed = now - lastDistanceTimeStamp; // in ms
       const hoursElapsed = timeElapsed / (1000 * 60 * 60); // ms to hours
+      if (newDistance === 0 || hoursElapsed === 0) return;
       const speed = newDistance / 1000 / hoursElapsed; // km/h
 
       // Safety filter: ignore unrealistic spikes (e.g. GPS glitch)
@@ -1017,5 +1018,3 @@ setTimeout(() => {
     socket.emit("distanceAdding", { busId: bus_id, distanceCovered });
   }
 }, 60 * 1000);
-
-
