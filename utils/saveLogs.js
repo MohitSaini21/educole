@@ -1,5 +1,6 @@
 import moment from "moment-timezone";
 import mongoose from "mongoose";
+import Bus from "../model/bus.js";
 import BusActivityLog from "../model/busTrack.js";
 
 export default async function saveLogs(busObject) {
@@ -31,6 +32,7 @@ export default async function saveLogs(busObject) {
           stops: [],
           path: [],
           events: [],
+          distanceCovered: "0",
           createdAt: new Date(),
         },
       },
@@ -96,7 +98,12 @@ export default async function saveLogs(busObject) {
       log.path.push(...busObject.path);
       busObject.path = [];
     }
-
+    if (busObject.distanceCovered > 0) {
+      log.distanceCovered += Number(busObject.distanceCovered);
+      const bus = await Bus.findById(busId);
+      bus.distanceTravelled += Number(busObject.distanceCovered);
+      busObject.distanceCovered = 0;
+    }
     if (Array.isArray(eventsData) && eventsData.length > 0) {
       // Ensure log.events is initialized as an array
       log.events = log.events || [];
@@ -114,8 +121,6 @@ export default async function saveLogs(busObject) {
         log.events.push(...uniqueNewEvents);
       }
     }
-    
-    
 
     await log.save();
     console.log(`✅ Log saved or updated for bus ${busObject.busId}`);

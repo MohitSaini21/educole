@@ -58,6 +58,11 @@ const busActivityLogSchema = new Schema({
       type: String, // URL or path to uploaded image
       required: false,
     },
+
+    distanceCovered: {
+      type: Number,
+      required: false,
+    },
     takenAt: {
       type: String,
     },

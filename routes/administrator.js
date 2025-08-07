@@ -610,10 +610,12 @@ function disConnect(req, busId) {
     const queryBusId = socket.handshake.query?.liveBusId;
 
     if (queryBusId && queryBusId === busId.toString()) {
-      socket.disconnect(true);
-      console.log(
-        `🔌 Disconnected socket ${socketId} for busId: ${queryBusId}`
-      );
+      // socket.disconnect(true);
+      // console.log(
+      //   `🔌 Disconnected socket ${socketId} for busId: ${queryBusId}`
+      // );
+
+      io.to(socket.id).emit("refreshRequest", queryBusId);
     }
   }
 }

@@ -63,9 +63,7 @@ parentPort.on("message", ({ task, busObject }) => {
       }
     }
 
-    // 3. Handle stop proximity
-    const currentTime = moment().tz("Asia/Kolkata");
-    const isMorning = currentTime.hour() < 12;
+ 
 
     if (!busObject.reachedStops) busObject.reachedStops = {};
 

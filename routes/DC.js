@@ -1,4 +1,6 @@
 import { fileURLToPath } from "url";
+import * as turf from "@turf/turf";
+
 import { dirname, join } from "path";
 
 // Recreate __dirname
@@ -245,7 +247,9 @@ router.get(
         busQuery.conductor = userId;
       }
 
-      let bus = await Bus.findOne(busQuery).select("_id routeStops status").lean();
+      let bus = await Bus.findOne(busQuery)
+        .select("_id routeStops status busNumber")
+        .lean();
 
       if (!bus) {
         return res.status(404).json({ message: "बस की जानकारी नहीं मिली।" });
@@ -264,7 +268,22 @@ router.get(
 
       // If bus is operational, return normal data
       res.set("Cache-Control", "no-store");
-      let campuses = ["educole"];
+
+      const campuses = [
+        {
+          name: "Educole HeadCampus",
+          polygon: turf.polygon([
+            [
+              [78.66361657971697, 28.822244722324484],
+              [78.6661459526332, 28.825112490408713],
+              [78.65713321095365, 28.82818569617592],
+              [78.65321167331075, 28.82405891358536],
+              [78.65600892925295, 28.821880139878317],
+              [78.66361657971697, 28.822244722324484],
+            ],
+          ]),
+        },
+      ];
       return res.render("DC/goLive.ejs", { user: req.worker, bus, campuses });
     } catch (err) {
       console.error("❌ Error fetching bus:", err);

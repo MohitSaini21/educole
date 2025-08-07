@@ -2,15 +2,20 @@ let socket = null;
 let isProvidingLocation = false;
 
 let previousPoint = null;
+let distanceCovered = 0;
 window._wasManuallyRejected = false;
 
 let peerConnection = null;
 let recorder = null;
 let chunks = [];
 let isSharing = false;
+
+const RADIUS_METERS = 300;
 let mediaStream = null;
 let isShowingRoute = false; // Track current state
 
+let lastCampusChecked = null;
+let lastProximityChecked = null;
 const iceConfig = {
   iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
 };
@@ -106,6 +111,7 @@ setTimeout(() => {
   navigator.geolocation.watchPosition(
     (position) => {
       const locationData = saveLocation(position);
+
       if (!locationData) {
         socket.emit("busLocationUpdate", locationData);
         return;
@@ -114,8 +120,41 @@ setTimeout(() => {
 
       if (socket && socket.connected) {
         socket.emit("busLocationUpdate", locationData);
+        if (isProvidingLocation) {
+          isProvidingLocation = true;
+        }
 
-        isProvidingLocation = true;
+        // let's check is it  time to check the stops proximity
+     if (!lastCampusChecked) lastCampusChecked = Date.now();
+     if (!lastProximityChecked) lastProximityChecked = Date.now();
+
+     const now = Date.now();
+
+     if (now - lastCampusChecked > 10000) {
+       // Every 10 seconds
+       console.log("Time to check campus alert...");
+       checkCampusEvent(locationData.latitude, locationData.longitude);
+       lastCampusChecked = now;
+     }
+
+     if (now - lastProximityChecked > 5000) {
+       // Every 5 seconds
+       checkProximity(
+         locationData.latitude,
+         locationData.longitude,
+         locationData.accuracy
+       );
+       DistanceCover(
+         locationData.latitude,
+         locationData.longitude,
+         locationData.accuracy
+       );
+       lastProximityChecked = now;
+     } else {
+       console.log(
+         "Skipping Frequent Proximities Checking and Events Tracking"
+       );
+     }
       } else {
         buildConnection();
       }
@@ -162,9 +201,15 @@ function buildConnection() {
   socket = io({
     reconnection: true, // Enable auto-reconnect
     reconnectionAttempts: Infinity, // Try reconnecting forever
-    reconnectionDelay: 5000, // Wait 5 seconds between attempts
+    reconnectionDelay: 10000, // Wait 5 seconds between attempts
     timeout: 20000, // Connection timeout
     query: { role: user.role, liveBusId: bus._id },
+  });
+
+  //  refreshRequest if bus details is updated or driver and conductor they are not allowed to provide locatioin got it
+
+  socket.on("refreshRequest", (busId) => {
+    window.location.reload();
   });
 
   socket.on("disconnectReason", (msg) => {
@@ -213,12 +258,16 @@ function buildConnection() {
 
   // Manually Disconnectin Socket Beofore Page is closed and Page si refreshed .
 
-  window.addEventListener(
-    "beforeunload",
-    () => socket?.connected && socket.disconnect()
-  );
+  window.addEventListener("beforeunload", () => {
+    if (socket && socket.connected && distanceCovered > 0) {
+      socket.emit("distanceAdding", { busId: bus_id, distanceCovered });
+    }
+
+    socket?.connected && socket.disconnect();
+  });
 
   socket.on("connectionApproved", renderStreamingUI);
+
   socket.on("admin-answer", ({ offer }) =>
     peerConnection?.setRemoteDescription(new RTCSessionDescription(offer))
   );
@@ -676,6 +725,9 @@ function emitNotification(stopId, status, distance, btn) {
   }
 
   socket.emit("sendNotificiation", payload, (isConfirm) => {
+    if (!btn) {
+      return;
+    }
     updateButtonStatus(
       btn,
       isConfirm ? "success" : "error",
@@ -700,12 +752,12 @@ function notifyStatus(stopId, status, lat, lon) {
   navigator.geolocation.getCurrentPosition(
     (pos) => {
       const { latitude, longitude } = pos.coords;
-      const distance = getDistance(
-        Number(lat),
-        Number(lon),
-        latitude,
-        longitude
-      );
+      const distance = getDistance({
+        lat1: Number(lat),
+        lon1: Number(lon),
+        lat2: latitude,
+        lon2: longitude,
+      });
       console.log(`📏 Distance from stop: ${distance} meters`);
       emitNotification(stopId, status, distance, btn);
     },
@@ -756,17 +808,214 @@ function notifyCampus(campus, event) {
   }
 }
 
-function getDistance(lat1, lon1, lat2, lon2) {
-  const R = 6371000; // Earth radius in meters
+function getDistance({ lat1, lon1, lat2, lon2 }) {
+  const R = 6371000; // Earth's radius in meters
   const toRad = (deg) => (deg * Math.PI) / 180;
 
-  const dLat = toRad(lat2 - lat1);
-  const dLon = toRad(lon2 - lon1);
+  const φ1 = toRad(lat1);
+  const φ2 = toRad(lat2);
+  const Δφ = toRad(lat2 - lat1);
+  const Δλ = toRad(lon2 - lon1);
 
   const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+    Math.sin(Δφ / 2) ** 2 + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) ** 2;
 
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c;
+
+  const distanceInMeters = R * c;
+  return Math.floor(distanceInMeters); // rounded down to nearest meter
 }
+
+const reachedStops = {}; // Tracks stop reach status per stopId
+let isMorning;
+
+// 1. Determine whether it is morning or evening (IST)
+(function () {
+  const nowUTC = new Date();
+  const IST_OFFSET = 5.5 * 60;
+  const localOffset = nowUTC.getTimezoneOffset();
+  const istTime = new Date(
+    nowUTC.getTime() + (IST_OFFSET + localOffset) * 60000
+  );
+
+  const hourIST = istTime.getHours();
+  isMorning = hourIST < 12;
+
+  console.log("Current IST Time:", istTime.toLocaleTimeString("en-IN"));
+  console.log("isMorning:", isMorning);
+})();
+
+// 2. Main function to check proximity
+function checkProximity(busLat, busLng, accuracy) {
+  const stops = bus.routeStops;
+  if (!stops || !stops.length) return;
+
+  for (const stop of stops) {
+    if (!stop || !stop._id || !stop.latitude || !stop.longitude) continue;
+
+    const stopId = stop._id.toString();
+
+    // Ensure entry exists for this stop
+    if (!reachedStops[stopId]) {
+      reachedStops[stopId] = { isMorning: false, isEvening: false };
+    }
+
+    // Skip if already logged for current time of day
+    const stopStatus = reachedStops[stopId];
+    if (
+      (isMorning && stopStatus.isMorning) ||
+      (!isMorning && stopStatus.isEvening)
+    ) {
+      continue;
+    }
+
+    // Calculate distance
+    const stopLat = parseFloat(stop.latitude);
+    const stopLng = parseFloat(stop.longitude);
+    const distance = getDistance({
+      lat1: Number(busLat),
+      lon1: Number(busLng),
+      lat2: stopLat,
+      lon2: stopLng,
+    });
+
+    if (distance <= RADIUS_METERS) {
+      console.log(
+        `📍 Bus reached "${stop.stopName}" at ${new Date().toLocaleTimeString(
+          "en-IN"
+        )}`
+      );
+
+      emitNotification(stopId, "arrived", distance, null);
+
+      // Mark as reached for morning or evening
+      if (isMorning) {
+        stopStatus.isMorning = true;
+      } else {
+        stopStatus.isEvening = true;
+      }
+    } else {
+      console.log(`🚌 Bus is ${distance}m away from "${stop.stopName}"`);
+    }
+  }
+}
+
+//  Function to Check Campus Alert
+let campusPrev = null;
+
+function checkCampusEvent(lat, lng) {
+  const currentPoint = { latitude: lat, longitude: lng };
+
+  if (!campusPrev) {
+    campusPrev = currentPoint;
+    return;
+  }
+
+  const event = checkEntryExit(campusPrev, currentPoint, campuses);
+  console.log("Checking Campus Alert..............................");
+  if (event) {
+    notifyCampus(event.campus, event.eventType);
+  }
+
+  campusPrev = currentPoint;
+}
+
+function checkEntryExit(previousPoint, currentPoint, campuses) {
+  console.log("Checking Campus Alert..............................");
+  if (!previousPoint || !currentPoint) {
+    console.warn("⚠️ Incomplete data for checkEntryExit.");
+    return null;
+  }
+
+  const previousGeo = turf.point([
+    previousPoint.longitude,
+    previousPoint.latitude,
+  ]);
+  const currentGeo = turf.point([
+    currentPoint.longitude,
+    currentPoint.latitude,
+  ]);
+
+  for (const campus of campuses) {
+    const wasInside = turf.booleanPointInPolygon(previousGeo, campus.polygon);
+    const isInside = turf.booleanPointInPolygon(currentGeo, campus.polygon);
+
+    if (!wasInside && isInside) {
+      return { campus: campus.name, eventType: "Entered" };
+    } else if (wasInside && !isInside) {
+      return { campus: campus.name, eventType: "Exited" };
+    } else {
+      console.log("Bus is  at either outside or inside campus");
+    }
+  }
+
+  return null;
+}
+// Function to track distance and speed using GPS data
+let disPrev = null;
+let lastDistanceTimeStamp = null;
+
+const speedLogs = [];
+
+function DistanceCover(lat, lng, accuracy) {
+  const currentPoint = { latitude: lat, longitude: lng };
+
+  // Skip until we have a previous point to compare
+  if (!disPrev) {
+    disPrev = currentPoint;
+    return;
+  }
+
+  // Only proceed if GPS accuracy is reliable
+  if (accuracy < 15) {
+    const newDistance = getDistance({
+      lat1: disPrev.latitude,
+      lng1: disPrev.longitude,
+      lat2: currentPoint.latitude,
+      lng2: currentPoint.longitude,
+    });
+
+    distanceCovered += newDistance;
+    disPrev = currentPoint;
+
+    const now = Date.now();
+
+    // Only calculate speed if we have a previous timestamp
+    if (lastDistanceTimeStamp) {
+      const timeElapsed = now - lastDistanceTimeStamp; // in ms
+      const hoursElapsed = timeElapsed / (1000 * 60 * 60); // ms to hours
+      const speed = newDistance / 1000 / hoursElapsed; // km/h
+
+      // Safety filter: ignore unrealistic spikes (e.g. GPS glitch)
+      if (speed <= 150) {
+        speedLogs.push({ time: now, speed });
+
+        if (speed > 30) {
+          let message = `🚨 Over-speeding Alert from ${
+            bus.busNumber
+          }: ${speed.toFixed(2)} km/h`;
+          console.log(message);
+          if (socket && socket.connected) {
+            socket.emit("overSpeedAlert", { busId: bus._id, message });
+          }
+        } else {
+          console.log(`✅ Speed: ${speed.toFixed(2)} km/h`);
+        }
+      } else {
+        console.warn("⚠️ Ignored faulty speed spike due to GPS anomaly.");
+      }
+    }
+
+    lastDistanceTimeStamp = now;
+  } else {
+    console.log("⏭️ Skipping distance calculation due to low GPS accuracy.");
+  }
+}
+
+setTimeout(() => {
+  if (socket && socket.connected && distanceCovered > 0) {
+    socket.emit("distanceAdding", { busId: bus_id, distanceCovered });
+  }
+}, 60 * 1000);
+
+

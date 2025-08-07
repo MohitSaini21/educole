@@ -113,6 +113,9 @@
   }
 
 
+
+
+
 </style>
 
     
@@ -233,18 +236,18 @@
             <% campuses.forEach(function(campus) { %>
               <div class="dropdown mb-3">
                 <button type="button" class="btn btn-outline-success dropdown-toggle w-100 text-left"
-                  id="dropdownMenu-<%= campus %>"
+                  id="dropdownMenu-<%= campus.name %>"
                   data-toggle="dropdown"
                   aria-haspopup="true"
                   aria-expanded="false"
-                  data-campus-name="<%= campus %>">
-                  <i class="mdi mdi-bell mr-2"></i> <%= campus %>
+                  data-campus-name="<%= campus.name %>">
+                  <i class="mdi mdi-bell mr-2"></i> <%= campus.name %>
                 </button>
           
-                <div class="dropdown-menu w-100" aria-labelledby="dropdownMenu-<%= campus %>">
+                <div class="dropdown-menu w-100" aria-labelledby="dropdownMenu-<%= campus.name %>">
                   <h6 class="dropdown-header text-muted">नोटिफिकेशन भेजें</h6>
-                  <a class="dropdown-item" href="#" onclick="notifyCampus('<%= campus %>', 'Entered')">प्रवेश किया</a>
-                  <a class="dropdown-item" href="#" onclick="notifyCampus('<%= campus %>', 'Exited')">निकास किया</a>
+                  <a class="dropdown-item" href="#" onclick="notifyCampus('<%= campus.name %>', 'Entered')">प्रवेश किया</a>
+                  <a class="dropdown-item" href="#" onclick="notifyCampus('<%= campus.name %>', 'Exited')">निकास किया</a>
                 </div>
               </div>
             <% }) %>
@@ -253,6 +256,9 @@
           
       </div>
     </div>
+
+
+    
     <!-- Modal -->
     <!-- container-scroller -->
     <!-- plugins:js -->
@@ -279,6 +285,8 @@
    <script>
        const bus= <%- JSON.stringify(bus) %>;
          const user= <%- JSON.stringify(user) %>;
+         var  campuses= <%- JSON.stringify(campuses) %>;
+         console.log(campuses)
 
          const role=user.role
 
@@ -287,8 +295,17 @@
         };
 
 
+
+
+        
+
+
+
+
         
    </script>
+<!-- Use Turf.js from CDN -->
+<script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
       <script src="/custom/driver.js"></script>
       <script src="/custom/speak.js"></script>
   <!-- custom Scripts -->

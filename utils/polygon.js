@@ -17,6 +17,7 @@ const campuses = [
   },
 ];
 
+
 export function checkEntryExit({ previousPoint, currentPoint }) {
   if (!previousPoint || !currentPoint) {
     console.warn("⚠️ Incomplete data for checkEntryExit.");

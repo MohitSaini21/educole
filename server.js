@@ -847,6 +847,15 @@ io.on("connection", (socket) => {
     }
   });
 
+  // updating the distance
+
+  socket.emit("distanceAdding", ({ busId, distanceCovered }) => {
+    distanceCovered = Number(distanceCovered);
+    if (Number(distanceCovered) > 0) {
+      lastEvaluated[busId].distanceCovered += distanceCovered;
+    }
+  });
+
   socket.on("busLocationUpdate", (data) => {
     try {
       if (data == null) return; // catches null or undefined only
@@ -902,6 +911,7 @@ io.on("connection", (socket) => {
           lastEvaluations: now,
           eventTimeline: [],
           path: [],
+          distanceCovered: 0,
         };
       }
 
@@ -1080,6 +1090,50 @@ io.on("connection", (socket) => {
     }
   });
 
+  //  Generatting Speed Alert
+
+  socket.on("overSpeedAlert", async ({ busId, message }) => {
+    console.log(message);
+
+    const bus = await Bus.findById(busId)
+      .select("busNumber route _id")
+      .populate("driver", "name phone")
+      .populate("conductor", "name phone");
+
+    if (!bus) return;
+
+    const admins = await CORE.find({
+      role: { $in: ["admin", "administrator"] },
+      isLogged: true,
+      notificationToken: { $exists: true, $ne: "" },
+    });
+
+    const route = bus.route || "N/A";
+    const busNumber = bus.busNumber || "Unknown";
+
+    // Safely get driver and conductor details
+    const driverInfo =
+      bus.driver?.name && bus.driver?.phone
+        ? `Driver: ${bus.driver.name} (${bus.driver.phone})`
+        : null;
+
+    const conductorInfo =
+      bus.conductor?.name && bus.conductor?.phone
+        ? `Conductor: ${bus.conductor.name} (${bus.conductor.phone})`
+        : null;
+
+    const additionalInfo = [conductorInfo, driverInfo]
+      .filter(Boolean)
+      .join("\n");
+
+    for (const admin of admins) {
+      if (additionalInfo) {
+        message += `\n\n${additionalInfo}`;
+      }
+      sendNotificationToClient(admin.notificationToken, "Speed Alert", message);
+    }
+  });
+
   socket.on("streamNotification", async ({ busId, about }) => {
     try {
       const bus = await Bus.findById(busId)
@@ -1108,12 +1162,10 @@ io.on("connection", (socket) => {
         bus.conductor?.name && bus.conductor?.phone
           ? `Conductor: ${bus.conductor.name} (${bus.conductor.phone})`
           : null;
-      console.log(conductorInfo);
 
       const additionalInfo = [conductorInfo, driverInfo]
         .filter(Boolean)
         .join("\n");
-      console.log(additionalInfo);
 
       for (const admin of admins) {
         const title = "📡 Live Stream Alert";
@@ -1129,7 +1181,7 @@ io.on("connection", (socket) => {
           message += `\n\nAs an administrator, please monitor the stream.`;
         }
 
-        await sendNotificationToClient(admin.notificationToken, title, message);
+        sendNotificationToClient(admin.notificationToken, title, message);
       }
     } catch (err) {
       console.error("Error sending stream notification:", err);
