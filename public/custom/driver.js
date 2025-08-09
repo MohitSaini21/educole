@@ -120,7 +120,7 @@ setTimeout(() => {
 
       if (socket && socket.connected) {
         socket.emit("busLocationUpdate", locationData);
-        if (isProvidingLocation) {
+        if (!isProvidingLocation) {
           isProvidingLocation = true;
         }
 
