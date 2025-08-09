@@ -33,10 +33,10 @@ function connectionDenied(message, errorType = "gpsApart") {
           <h4 class="card-title">${user.name} (${user.role})</h4>
           <p class="card-description">${message}</p>
           <div class="template-demo">
-            <button class="btn btn-secondary btn-fw">
+            <button class="btn btn-danger btn-fw">
               <a href="/DC" style="text-decoration: none; color: inherit;">वापस जाएँ</a>
             </button>
-  <button class="btn btn-primary btn-fw"
+  <button class="btn btn-success btn-fw"
     onclick="window.location.href='/DC/goLive'" 
     ${errorType === "gps" ? "" : "disabled"}>
     ${
@@ -66,7 +66,7 @@ function connectionDenied(message, errorType = "gpsApart") {
     if (isProvidingLocation) {
       window.location.reload();
     }
-  }, 3000);
+  }, 10000);
 }
 
 function areLatLonClose(lat1, lon1, lat2, lon2, tolerance = 0.000009) {
@@ -166,7 +166,7 @@ setTimeout(() => {
       timeout: 15000,
     }
   );
-}, 2000);
+}, 1);
 
 function handleGeolocationError(error) {
   const messages = {
@@ -336,7 +336,7 @@ function renderStreamingUI() {
       
       
       
-      <button class="btn btn-secondary btn-fw">
+      <button class="btn btn-danger btn-fw">
       <a href="/DC" style="text-decoration: none; color: inherit;">चेक्ड आउट</a>
       </button>
       <br>
@@ -344,7 +344,7 @@ function renderStreamingUI() {
       
           
         <!-- 📡 Streaming Button (default Bootstrap style) -->
-        <button onclick="toggleStreaming(this)" class="btn btn-secondary">
+        <button onclick="toggleStreaming(this)" class="btn btn-successy btn-fw">
           📡 स्ट्रीमिंग शुरू करें
         </button>
 
@@ -587,6 +587,8 @@ async function startStreaming(button) {
   await collectionIceCandidateInfo();
 
   button.innerText = "स्ट्रीमिंग रोकें";
+  button.classList.remove("btn-success");
+  button.classList.add("btn-danger");
 }
 
 function zoomInVframe() {
@@ -644,6 +646,8 @@ function stopStreaming(button) {
 
   // 🔁 Update button
   button.innerText = "स्ट्रीमिंग शुरू करें";
+    button.classList.remove("btn-danger");
+  button.classList.add("btn-success");
 
   const mapContainer = document.getElementById("videoTag");
   mapContainer.scrollIntoView({ behavior: "smooth", block: "center" });
