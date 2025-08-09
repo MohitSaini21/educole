@@ -63,10 +63,10 @@ function connectionDenied(message, errorType = "gpsApart") {
   }
 
   setTimeout(() => {
-    if (errorType == "gps" && isProvidingLocation) {
+    if (isProvidingLocation) {
       window.location.reload();
     }
-  }, 2000);
+  }, 3000);
 }
 
 function areLatLonClose(lat1, lon1, lat2, lon2, tolerance = 0.000009) {
@@ -199,9 +199,8 @@ function handleGeolocationError(error) {
 
 function buildConnection() {
   socket = io({
-    reconnection: true, // Enable auto-reconnect
-    reconnectionAttempts: Infinity, // Try reconnecting forever
-    reconnectionDelay: 10000, // Wait 5 seconds between attempts
+    reconnection: false, // Enable auto-reconnect
+
     timeout: 20000, // Connection timeout
     query: { role: user.role, liveBusId: bus._id },
   });
@@ -1019,4 +1018,4 @@ setTimeout(() => {
     socket.emit("distanceAdding", { busId: bus._id, distanceCovered });
     distanceCovered = 0;
   }
-}, 60 * 1000);
+}, 30 * 1000);
