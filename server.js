@@ -110,7 +110,11 @@ app.use(
   dcRouter
 );
 
-const io = new Server(server);
+const io = new Server(server, {
+  pingInterval: 10000, // send ping every 10s
+  pingTimeout: 5000,   // disconnect if no pong in 5s
+});
+
 app.set("io", io); // <-- shared shelf mein rakh diy
 // Object to store busId -> array of socketIds
 let busConnections = {};
@@ -850,8 +854,13 @@ io.on("connection", (socket) => {
   // updating the distance
 
   socket.on("distanceAdding", ({ busId, distanceCovered }) => {
-    distanceCovered = Number(distanceCovered);
-    if (Number(distanceCovered) > 0) {
+    distanceCovered = distanceCovered / 1000;
+    if (distanceCovered > 0) {
+      let busEval = lastEvaluated[busId];
+      if (!busEval) {
+        return;
+      }
+
       lastEvaluated[busId].distanceCovered += distanceCovered;
     }
   });
@@ -916,7 +925,7 @@ io.on("connection", (socket) => {
       }
 
       // 7. Cooldown check — only update every 10s
-      const cooldownPassed = now - busEval.lastEvaluations >= 10 * 60 * 1000;
+      const cooldownPassed = now - busEval.lastEvaluations >= 5 * 60 * 1000;
       if (cooldownPassed) {
         // Push path update
         busEval.path.push({

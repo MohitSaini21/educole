@@ -4,7 +4,12 @@ import Bus from "../model/bus.js";
 import BusActivityLog from "../model/busTrack.js";
 
 export default async function saveLogs(busObject) {
-  if (!busObject.reachedStops && !busObject.path && !busObject.eventTimeline) {
+  if (
+    !busObject.reachedStops &&
+    !busObject.path &&
+    !busObject.eventTimeline &&
+    !busObject.distanceCovered
+  ) {
     console.log("🛑 Nothing to save: no stops, path, or events.");
     return;
   }
@@ -32,7 +37,7 @@ export default async function saveLogs(busObject) {
           stops: [],
           path: [],
           events: [],
-          distanceCovered: "0",
+          distanceCovered: 0,
           createdAt: new Date(),
         },
       },
@@ -98,12 +103,42 @@ export default async function saveLogs(busObject) {
       log.path.push(...busObject.path);
       busObject.path = [];
     }
-    if (busObject.distanceCovered > 0) {
-      log.distanceCovered += Number(busObject.distanceCovered);
-      const bus = await Bus.findById(busId);
-      bus.distanceTravelled += Number(busObject.distanceCovered);
-      busObject.distanceCovered = 0;
+if (busObject.distanceCovered > 0) {
+  try {
+    console.log(`📏 Distance covered received: ${busObject.distanceCovered}`);
+
+    // Add distance to log (keep 3 decimal places)
+    log.distanceCovered =
+      Math.round((log.distanceCovered + busObject.distanceCovered) * 1000) /
+      1000;
+    console.log(`📝 Updated log distance: ${log.distanceCovered}`);
+
+    // Fetch bus from DB
+    const bus = await Bus.findById(busId);
+    if (!bus) {
+      console.error(`❌ No bus found for ID: ${busId}`);
+      return;
     }
+
+    // Update bus distance (keep 3 decimal places)
+    bus.distanceTravelled =
+      Math.round((bus.distanceTravelled + busObject.distanceCovered) * 1000) /
+      1000;
+    console.log(`🚌 Updated bus distance: ${bus.distanceTravelled}`);
+
+    // Save bus
+    await bus.save();
+    console.log("✅ Bus saved successfully");
+
+    // Reset the distance in busObject
+    busObject.distanceCovered = 0;
+    console.log("🔄 Reset busObject.distanceCovered to 0");
+  } catch (error) {
+    console.error("❌ Error in adding the distance:", error);
+  }
+}
+
+
     if (Array.isArray(eventsData) && eventsData.length > 0) {
       // Ensure log.events is initialized as an array
       log.events = log.events || [];

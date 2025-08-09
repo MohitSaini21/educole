@@ -50,6 +50,8 @@ const busActivityLogSchema = new Schema({
       type: String,
     },
   },
+
+  distanceCovered: { type: Number, default: 0 },
   eveningSnap: {
     reading: {
       type: Number,
@@ -59,10 +61,6 @@ const busActivityLogSchema = new Schema({
       required: false,
     },
 
-    distanceCovered: {
-      type: Number,
-      required: false,
-    },
     takenAt: {
       type: String,
     },

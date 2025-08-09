@@ -244,7 +244,7 @@
                   <i class="mdi mdi-bell mr-2"></i> <%= campus.name %>
                 </button>
           
-                <div class="dropdown-menu w-100" aria-labelledby="dropdownMenu-<%= campus.name %>">
+                <div class="dropdown-menu w-100" aria-labelledby="dropdownMenu-<%= campus.name  %>">
                   <h6 class="dropdown-header text-muted">नोटिफिकेशन भेजें</h6>
                   <a class="dropdown-item" href="#" onclick="notifyCampus('<%= campus.name %>', 'Entered')">प्रवेश किया</a>
                   <a class="dropdown-item" href="#" onclick="notifyCampus('<%= campus.name %>', 'Exited')">निकास किया</a>
@@ -258,7 +258,7 @@
     </div>
 
 
-    
+
     <!-- Modal -->
     <!-- container-scroller -->
     <!-- plugins:js -->

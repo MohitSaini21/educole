@@ -260,7 +260,8 @@ function buildConnection() {
 
   window.addEventListener("beforeunload", () => {
     if (socket && socket.connected && distanceCovered > 0) {
-      socket.emit("distanceAdding", { busId: bus_id, distanceCovered });
+      socket.emit("distanceAdding", { busId: bus._id, distanceCovered });
+      distanceCovered = 0;
     }
 
     socket?.connected && socket.disconnect();
@@ -1015,6 +1016,7 @@ function DistanceCover(lat, lng, accuracy) {
 
 setTimeout(() => {
   if (socket && socket.connected && distanceCovered > 0) {
-    socket.emit("distanceAdding", { busId: bus_id, distanceCovered });
+    socket.emit("distanceAdding", { busId: bus._id, distanceCovered });
+    distanceCovered = 0;
   }
 }, 60 * 1000);
