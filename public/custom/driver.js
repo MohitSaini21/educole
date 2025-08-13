@@ -1005,7 +1005,7 @@ function DistanceCover(lat, lng, accuracy) {
       if (speed <= 150) {
         speedLogs.push({ time: now, speed });
 
-        if (speed > 30) {
+        if (speed > 50) {
           let message = `🚨 Over-speeding Alert from ${
             bus.busNumber
           }: ${speed.toFixed(2)} km/h`;
