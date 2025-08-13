@@ -62,11 +62,16 @@ function connectionDenied(message, errorType = "gpsApart") {
     mainRow.appendChild(temp.firstChild);
   }
 
-  setTimeout(() => {
-    if (isProvidingLocation) {
+  if (errorType == "gps") {
+    setTimeout(() => {
       window.location.reload();
-    }
-  }, 10000);
+    }, 10000);
+  }
+  // setTimeout(() => {
+  //   if (isProvidingLocation) {
+  //     window.location.reload();
+  //   }
+  // }, 10000);
 }
 
 function areLatLonClose(lat1, lon1, lat2, lon2, tolerance = 0.000009) {
@@ -198,13 +203,13 @@ function handleGeolocationError(error) {
 }
 
 function buildConnection() {
-  socket = io({
-    reconnection: false, // Enable auto-reconnect
-
+  socket = io({ 
+    reconnection: true, // Enable auto-reconnect
+    reconnectionDelay: 6000, // Wait 5 seconds before trying again
+    reconnectionAttempts: Infinity, // Keep trying forever (or set a number)
     timeout: 20000, // Connection timeout
     query: { role: user.role, liveBusId: bus._id },
   });
-
   //  refreshRequest if bus details is updated or driver and conductor they are not allowed to provide locatioin got it
 
   socket.on("refreshRequest", (busId) => {

@@ -1257,6 +1257,8 @@ const startServer = async () => {
       console.log("✅ Admin user already exists.");
     }
 
+    liveBuses = [];
+
     console.log("✅ MongoDB connected successfully.");
 
     await setAllRouteStops();
