@@ -203,7 +203,7 @@ function handleGeolocationError(error) {
 }
 
 function buildConnection() {
-  socket = io({ 
+  socket = io({
     reconnection: true, // Enable auto-reconnect
     reconnectionDelay: 6000, // Wait 5 seconds before trying again
     reconnectionAttempts: Infinity, // Keep trying forever (or set a number)
@@ -1033,3 +1033,11 @@ setTimeout(() => {
     distanceCovered = 0;
   }
 }, 30 * 1000);
+
+function updateConnectionStatus() {
+  if (!navigator.onLine) {
+    window.location.href = "/DC"; // redirect to /DC page
+  }
+}
+
+window.addEventListener("offline", updateConnectionStatus);
