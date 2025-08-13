@@ -112,7 +112,7 @@ app.use(
 
 const io = new Server(server, {
   pingInterval: 10000, // send ping every 10s
-  pingTimeout: 5000,   // disconnect if no pong in 5s
+  pingTimeout: 5000, // disconnect if no pong in 5s
 });
 
 app.set("io", io); // <-- shared shelf mein rakh diy
@@ -632,48 +632,11 @@ io.on("connection", (socket) => {
 
     // 🎯 Priority 6: Live Bus (driver/conductor)
   } else if (socket.liveBusId) {
-    const busId = socket.liveBusId;
+    const busId = socket.liveBusId.toString(); // ensure consistent type
 
     if (liveBuses.includes(busId)) {
-      // 📝 Mark this new socket as the override attempt
-      pendingBusOverrides[busId] = socket.id;
-
-      for (const [socketId, ExistingSocket] of io.sockets.sockets) {
-        const socketBusId = ExistingSocket.liveBusId;
-
-        if (!socketBusId) continue;
-
-        if (socketBusId === busId) {
-          ExistingSocket.emit("disconnectReason", "duplicate_connection");
-          ExistingSocket.disconnect(true);
-          console.warn(`⚠️ Overriding connection for bus ${busId}`);
-          break;
-        }
-      }
-      setTimeout(() => {
-        const isAlreadyLive = liveBuses.includes(busId);
-        const isStillPending = pendingBusOverrides[busId] === socket.id;
-
-        if (!isAlreadyLive && isStillPending) {
-          liveBuses.push(busId);
-          console.log(`🟢 Bus ${busId} is now live with socket ${socket.id}`);
-
-          allAdmins.forEach((adminSocketId) => {
-            io.to(adminSocketId).emit("add", busId);
-          });
-
-          socket.emit("connectionApproved", "✅ You are now live.");
-        } else if (isAlreadyLive && isStillPending) {
-          // Old connection hasn't been cleaned up in time
-          console.log(
-            `⛔ Conflict still exists. Forcing disconnect of pending override`
-          );
-
-          socket.disconnect(true);
-        }
-
-        delete pendingBusOverrides[busId]; // cleanup
-      }, 1000);
+      socket.emit("disconnectReason", "duplicate_connection");
+      socket.disconnect(true);
     } else {
       liveBuses.push(busId);
       console.log(`🟢 Bus ${busId} is now live with socket ${socket.id}`);

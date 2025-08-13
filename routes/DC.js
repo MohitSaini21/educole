@@ -222,6 +222,20 @@ router.post(
   }
 );
 
+function redirectIfBusAlreadyLive(req, res, busId) {
+  const io = req.app.get("io");
+
+  for (const [, socket] of io.sockets.sockets) {
+    const queryBusId = socket.handshake.query?.liveBusId;
+
+    if (queryBusId && queryBusId === busId.toString()) {
+      res.redirect("/DC"); // index page
+      return true; // stop further route execution
+    }
+  }
+  return false; // no live socket for this bus
+}
+
 router.get(
   "/goLive",
   checkUserExistenceAndRedirect([
@@ -261,6 +275,9 @@ router.get(
           status: "out_of_service",
         });
       }
+
+      // 🔍 check for active socket before rendering
+      if (redirectIfBusAlreadyLive(req, res, bus._id)) return;
 
       bus.routeStops = bus.routeStops.sort(
         (a, b) => parseInt(a.stopOrder) - parseInt(b.stopOrder)

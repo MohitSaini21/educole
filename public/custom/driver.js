@@ -166,7 +166,7 @@ setTimeout(() => {
       timeout: 15000,
     }
   );
-}, 1);
+}, 2000);
 
 function handleGeolocationError(error) {
   const messages = {
@@ -339,14 +339,19 @@ function renderStreamingUI() {
       <button class="btn btn-danger btn-fw">
       <a href="/DC" style="text-decoration: none; color: inherit;">चेक्ड आउट</a>
       </button>
+
+          
+      
       <br>
       <br>
       
           
         <!-- 📡 Streaming Button (default Bootstrap style) -->
-        <button onclick="toggleStreaming(this)" class="btn btn-successy btn-fw">
+        <button onclick="toggleStreaming(this)" class="btn btn-success btn-fw">
           📡 स्ट्रीमिंग शुरू करें
         </button>
+
+
 
       
     </div>
@@ -646,7 +651,7 @@ function stopStreaming(button) {
 
   // 🔁 Update button
   button.innerText = "स्ट्रीमिंग शुरू करें";
-    button.classList.remove("btn-danger");
+  button.classList.remove("btn-danger");
   button.classList.add("btn-success");
 
   const mapContainer = document.getElementById("videoTag");
