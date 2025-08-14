@@ -639,16 +639,25 @@ io.on("connection", (socket) => {
     if (liveBusesMap[busId] && liveBusesMap[busId] !== socket.id) {
       const oldSocket = io.sockets.sockets.get(liveBusesMap[busId]);
       if (oldSocket) {
+        console.log(
+          `⚠️ Duplicate connection for bus ${busId}, dropping old socket ${liveBusesMap[busId]}`
+        );
         oldSocket.emit("disconnectReason", "duplicate_connection");
         oldSocket.disconnect(true);
       }
     }
 
     // Register the new socket
-    liveBuses.push(busId);
     liveBusesMap[busId] = socket.id;
+
+    // Keep your existing array logic
+    if (!liveBuses.includes(busId)) {
+      liveBuses.push(busId);
+    }
+
     console.log(`🟢 Bus ${busId} is now live with socket ${socket.id}`);
 
+    // Notify admins
     allAdmins.forEach((adminSocketId) => {
       io.to(adminSocketId).emit("add", busId);
     });

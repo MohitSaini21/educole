@@ -204,9 +204,9 @@ function handleGeolocationError(error) {
 
 function buildConnection() {
   socket = io({
-    reconnection: true, // Enable auto-reconnect
-    reconnectionDelay: 6000, // Wait 5 seconds before trying again
-    reconnectionAttempts: Infinity, // Keep trying forever (or set a number)
+    reconnectionAttempts: 5,
+    reconnectionDelay: 1000,
+    reconnectionDelayMax: 5000,
     timeout: 20000, // Connection timeout
     query: { role: user.role, liveBusId: bus._id },
   });
@@ -1041,15 +1041,17 @@ setTimeout(() => {
 }, 30 * 1000);
 
 window.addEventListener("offline", () => {
-  console.log("📴 Offline, disconnecting socket");
+  alert("📴 Offline, disconnecting socket");
   if (socket && socket.disconnect) {
     socket.disconnect();
   }
 });
 
 window.addEventListener("online", () => {
-  console.log("🌐 Back online, reconnecting...");
-  if (socket && socket.connect) {
-    socket.connect();
-  }
+  alert("🌐 Back online, waiting before reconnect...");
+  setTimeout(() => {
+    if (!socket.connected) {
+      socket.connect();
+    }
+  }, 2000); // wait 2s before trying
 });
