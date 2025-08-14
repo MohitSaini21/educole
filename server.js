@@ -111,8 +111,8 @@ app.use(
 );
 
 const io = new Server(server, {
-  pingInterval: 10000, // send ping every 10s
-  pingTimeout: 5000, // disconnect if no pong in 5s
+  pingInterval: 5000, // every 5s send ping
+  pingTimeout: 3000, // wait 3s for pong before dropping
 });
 
 app.set("io", io); // <-- shared shelf mein rakh diy
@@ -634,27 +634,16 @@ io.on("connection", (socket) => {
     // 🎯 Priority 6: Live Bus (driver/conductor)
   } else if (socket.liveBusId) {
     const busId = socket.liveBusId.toString();
-
-    // If busId already active with another socket, drop the old one
-    if (liveBusesMap[busId] && liveBusesMap[busId] !== socket.id) {
-      const oldSocket = io.sockets.sockets.get(liveBusesMap[busId]);
-      if (oldSocket) {
-        console.log(
-          `⚠️ Duplicate connection for bus ${busId}, dropping old socket ${liveBusesMap[busId]}`
-        );
-        oldSocket.emit("disconnectReason", "duplicate_connection");
-        oldSocket.disconnect(true);
-      }
+    if (liveBuses.includes(busId)) {
+      console.log(
+        "Making Client To Refresh Page........................................"
+      );
+      socket.emit("refreshIntervalRequest", busId);
+      socket.disconnect(true);
+      return;
     }
 
-    // Register the new socket
-    liveBusesMap[busId] = socket.id;
-
-    // Keep your existing array logic
-    if (!liveBuses.includes(busId)) {
-      liveBuses.push(busId);
-    }
-
+    liveBuses.push(busId);
     console.log(`🟢 Bus ${busId} is now live with socket ${socket.id}`);
 
     // Notify admins

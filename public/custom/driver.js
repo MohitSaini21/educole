@@ -69,11 +69,6 @@ function connectionDenied(message, errorType = "gpsApart") {
       window.location.reload();
     }, 10000);
   }
-  // setTimeout(() => {
-  //   if (isProvidingLocation) {
-  //     window.location.reload();
-  //   }
-  // }, 10000);
 }
 
 function areLatLonClose(lat1, lon1, lat2, lon2, tolerance = 0.000009) {
@@ -173,7 +168,7 @@ setTimeout(() => {
       timeout: 15000,
     }
   );
-}, 2000);
+}, 3000);
 
 function handleGeolocationError(error) {
   const messages = {
@@ -206,8 +201,11 @@ function handleGeolocationError(error) {
 
 function buildConnection() {
   socket = io({
-    autoConnect: false, // Don't connect automatically
-    reconnection: false,
+    autoConnect: true, // connect immediately
+    reconnection: true, // enable auto reconnect
+    reconnectionAttempts: Infinity, // never stop retrying
+    reconnectionDelay: 2000, // start with 2s delay
+    reconnectionDelayMax: 6000, // cap at 6s delay
     timeout: 20000, // Connection timeout
     query: { role: user.role, liveBusId: bus._id },
   });
@@ -232,9 +230,6 @@ function buildConnection() {
 
     // Don't show message if client itself disconnected
     if (reason === "io client disconnect") {
-      connectionDenied(
-        "you have turned off your internet and wifi has been off."
-      );
       return;
     }
 
@@ -1040,3 +1035,20 @@ setTimeout(() => {
   }
   jb;
 }, 30 * 1000);
+
+window.addEventListener("offline", () => {
+  console.warn("📴 Offline — disconnecting socket");
+  window.location.href = "/DC";
+});
+
+window.addEventListener("online", () => {
+  console.warn("🌐 Back online — will reconnect in 5s");
+  return;
+});
+
+socket.on("refreshIntervalRequest", () => {
+  setTimeout(() => {
+    console.log("🔄 Refreshing the page...");
+    window.location.href = window.location.href;
+  }, 1000);
+});
