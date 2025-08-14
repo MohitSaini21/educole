@@ -168,7 +168,7 @@ setTimeout(() => {
       timeout: 15000,
     }
   );
-}, 3000);
+}, 4000);
 
 function handleGeolocationError(error) {
   const messages = {
@@ -225,7 +225,10 @@ function buildConnection() {
     connectionDenied(msg);
   });
   socket.on("disconnect", (reason) => {
+    window.location.href = "/DC";
+    return;
     console.log("Disconnect reason:", reason);
+
     cleanupConnection();
 
     // Don't show message if client itself disconnected
@@ -1049,6 +1052,6 @@ window.addEventListener("online", () => {
 socket.on("refreshIntervalRequest", () => {
   setTimeout(() => {
     console.log("🔄 Refreshing the page...");
-    window.location.href = window.location.href;
+    window.location.href = "/DC";
   }, 1000);
 });
