@@ -202,11 +202,13 @@ function handleGeolocationError(error) {
 }
 
 let reconnectAttempt = 0;
+isReconnecting = false;
+let reconnectTimer = null; // store timer ID
 function buildConnection() {
   if (socket) {
     console.log("🧹 Cleaning up old socket listners to prevent memery leak");
     socket.removeAllListeners(); // Clean up all previous listeners
-    socket.connected && socket.disconnect(); // <- add this
+    socket.disconnect(); // <- add this
   }
 
   socket = io({
@@ -215,6 +217,17 @@ function buildConnection() {
     query: { role: user.role, liveBusId: bus._id },
   });
   //  refreshRequest if bus details is updated or driver and conductor they are not allowed to provide locatioin got it
+
+  socket.on("connect", () => {
+    console.log("✅ Connected to server");
+    // reset reconnect state
+    isReconnecting = false;
+    reconnectAttempt = 0;
+    if (reconnectTimer) {
+      clearTimeout(reconnectTimer);
+      reconnectTimer = null;
+    }
+  });
 
   socket.on("refreshRequest", (busId) => {
     window.location.reload();
@@ -278,10 +291,10 @@ function buildConnection() {
       msg = "❓ अज्ञात कारण से कनेक्शन टूट गया।";
     }
 
-   if (msg) {
-     msg += "\n\n🔄 **कनेक्ट किया जा रहा है... कृपया प्रतीक्षा करें।**";
-     connectionDenied(msg);
-   }
+    if (msg) {
+      msg += "\n\n🔄 **कनेक्ट किया जा रहा है... कृपया प्रतीक्षा करें।**";
+      connectionDenied(msg);
+    }
 
     // Optional: Reset the manual flag
     window._wasManuallyRejected = false;
@@ -319,14 +332,21 @@ function buildConnection() {
   });
 }
 
+
 function scheduleReconnect() {
+  if (isReconnecting) return; // already reconnecting
+
   reconnectAttempt++;
-  // const delay = reconnectAttempt * 2000; // 2s, 4s, 6s, 8s...
   const delay = 5000;
-
   console.log(`⏳ Reconnecting in ${delay / 1000} seconds...`);
+  isReconnecting = true;
 
-  setTimeout(() => {
+  if (reconnectTimer) {
+    clearTimeout(reconnectTimer);
+    reconnectTimer = null;
+  }
+
+  reconnectTimer = setTimeout(() => {
     console.log(`🔁 Attempting to reconnect #${reconnectAttempt}`);
     buildConnection();
   }, delay);
