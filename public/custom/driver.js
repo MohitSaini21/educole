@@ -221,6 +221,16 @@ function buildConnection() {
     msg = "कनेक्शन समय समाप्त हो गया। कृपया फिर से प्रयास करें।";
     connectionDenied(msg);
   });
+
+  // this ois the refreshing event to make the page is refres or redirect he user to back to index.page
+
+  socket.on("refreshIntervalRequest", () => {
+    socket.disconnect();
+    setTimeout(() => {
+      console.log("🔄 Refreshing the page...");
+      window.location.href = "/DC";
+    }, 1000);
+  });
   socket.on("disconnect", (reason) => {
     window.location.href = "/DC";
     return;
@@ -1033,7 +1043,6 @@ setTimeout(() => {
     socket.emit("distanceAdding", { busId: bus._id, distanceCovered });
     distanceCovered = 0;
   }
-  jb;
 }, 30 * 1000);
 
 window.addEventListener("offline", () => {
@@ -1044,12 +1053,4 @@ window.addEventListener("offline", () => {
 window.addEventListener("online", () => {
   console.warn("🌐 Back online — will reconnect in 5s");
   return;
-});
-
-socket.on("refreshIntervalRequest", () => {
-  socket.disconnect();
-  setTimeout(() => {
-    console.log("🔄 Refreshing the page...");
-    window.location.href = "/DC";
-  }, 1000);
 });
