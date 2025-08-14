@@ -230,7 +230,12 @@ function buildConnection() {
     cleanupConnection();
 
     // Don't show message if client itself disconnected
-    if (reason === "io client disconnect") return;
+    if (reason === "io client disconnect") {
+      connectionDenied(
+        "you have turned off your internet and wifi has been off."
+      );
+      return;
+    }
 
     const isHidden = document.visibilityState === "hidden";
     const manuallyRejected = window._wasManuallyRejected === true;
@@ -1032,12 +1037,19 @@ setTimeout(() => {
     socket.emit("distanceAdding", { busId: bus._id, distanceCovered });
     distanceCovered = 0;
   }
+  jb;
 }, 30 * 1000);
 
-function updateConnectionStatus() {
-  if (!navigator.onLine) {
-    window.location.href = "/DC"; // redirect to /DC page
+window.addEventListener("offline", () => {
+  console.log("📴 Offline, disconnecting socket");
+  if (socket && socket.disconnect) {
+    socket.disconnect();
   }
-}
+});
 
-window.addEventListener("offline", updateConnectionStatus);
+window.addEventListener("online", () => {
+  console.log("🌐 Back online, reconnecting...");
+  if (socket && socket.connect) {
+    socket.connect();
+  }
+});

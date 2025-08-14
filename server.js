@@ -589,6 +589,7 @@ function logStopArrivalToMemory({ busId, stopId }) {
   }
 }
 
+let liveBusesMap = {}; // { busId: socketId }
 io.on("connection", (socket) => {
   const query = socket.handshake.query;
 
@@ -632,21 +633,27 @@ io.on("connection", (socket) => {
 
     // 🎯 Priority 6: Live Bus (driver/conductor)
   } else if (socket.liveBusId) {
-    const busId = socket.liveBusId.toString(); // ensure consistent type
+    const busId = socket.liveBusId.toString();
 
-    if (liveBuses.includes(busId)) {
-      socket.emit("disconnectReason", "duplicate_connection");
-      socket.disconnect(true);
-    } else {
-      liveBuses.push(busId);
-      console.log(`🟢 Bus ${busId} is now live with socket ${socket.id}`);
-
-      allAdmins.forEach((adminSocketId) => {
-        io.to(adminSocketId).emit("add", busId);
-      });
-
-      socket.emit("connectionApproved", "✅ You are now live.");
+    // If busId already active with another socket, drop the old one
+    if (liveBusesMap[busId] && liveBusesMap[busId] !== socket.id) {
+      const oldSocket = io.sockets.sockets.get(liveBusesMap[busId]);
+      if (oldSocket) {
+        oldSocket.emit("disconnectReason", "duplicate_connection");
+        oldSocket.disconnect(true);
+      }
     }
+
+    // Register the new socket
+    liveBuses.push(busId);
+    liveBusesMap[busId] = socket.id;
+    console.log(`🟢 Bus ${busId} is now live with socket ${socket.id}`);
+
+    allAdmins.forEach((adminSocketId) => {
+      io.to(adminSocketId).emit("add", busId);
+    });
+
+    socket.emit("connectionApproved", "✅ You are now live.");
   } else {
     console.warn("🚫 Unknown or malformed connection attempt:", query);
     socket.disconnect(true);
@@ -1203,12 +1210,15 @@ io.on("connection", (socket) => {
     if (socket.liveBusId) {
       const busId = socket.liveBusId;
 
-      // Remove from live buses
+      if (busId && liveBuses[busId] === socket.id) {
+        delete liveBuses[busId];
+      }
+
       const index = liveBuses.indexOf(busId);
       if (index !== -1) {
         liveBuses.splice(index, 1);
         console.log(`🚫 Bus ${busId} went offline.`);
-        // Notify all global admins
+
         allAdmins.forEach((id) => io.to(id).emit("remove", busId));
       }
 
