@@ -201,8 +201,6 @@ function handleGeolocationError(error) {
 
 function buildConnection() {
   socket = io({
-    autoConnect: false, // connect immediately
-
     timeout: 20000, // Connection timeout
     query: { role: user.role, liveBusId: bus._id },
   });
