@@ -6,6 +6,8 @@ let distanceCovered = 0;
 window._wasManuallyRejected = false;
 
 let peerConnection = null;
+
+let reconnectTimeout;
 let recorder = null;
 let chunks = [];
 let isSharing = false;
@@ -204,9 +206,8 @@ function handleGeolocationError(error) {
 
 function buildConnection() {
   socket = io({
-    reconnectionAttempts: 5,
-    reconnectionDelay: 1000,
-    reconnectionDelayMax: 5000,
+    autoConnect: false, // Don't connect automatically
+    reconnection: false,
     timeout: 20000, // Connection timeout
     query: { role: user.role, liveBusId: bus._id },
   });
@@ -1039,19 +1040,3 @@ setTimeout(() => {
   }
   jb;
 }, 30 * 1000);
-
-window.addEventListener("offline", () => {
-  alert("📴 Offline, disconnecting socket");
-  if (socket && socket.disconnect) {
-    socket.disconnect();
-  }
-});
-
-window.addEventListener("online", () => {
-  alert("🌐 Back online, waiting before reconnect...");
-  setTimeout(() => {
-    if (!socket.connected) {
-      socket.connect();
-    }
-  }, 2000); // wait 2s before trying
-});
