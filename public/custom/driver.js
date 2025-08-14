@@ -201,11 +201,8 @@ function handleGeolocationError(error) {
 
 function buildConnection() {
   socket = io({
-    autoConnect: true, // connect immediately
-    reconnection: true, // enable auto reconnect
-    reconnectionAttempts: Infinity, // never stop retrying
-    reconnectionDelay: 2000, // start with 2s delay
-    reconnectionDelayMax: 6000, // cap at 6s delay
+    autoConnect: false, // connect immediately
+
     timeout: 20000, // Connection timeout
     query: { role: user.role, liveBusId: bus._id },
   });
@@ -1050,6 +1047,7 @@ window.addEventListener("online", () => {
 });
 
 socket.on("refreshIntervalRequest", () => {
+  socket.disconnect();
   setTimeout(() => {
     console.log("🔄 Refreshing the page...");
     window.location.href = "/DC";
