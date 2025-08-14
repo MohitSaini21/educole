@@ -165,7 +165,7 @@ cron.schedule(
     console.log("🧹 Cleared all entries from lastEvaluated");
 
     // 🔹 Delete old logs based on logDate (YYYY-MM-DD format)
-    const cutoffDate = nowIST.clone().subtract(1, "day").format("YYYY-MM-DD");
+    const cutoffDate = nowIST.clone().subtract(10, "day").format("YYYY-MM-DD");
     console.log(`🧾 Deleting logs with logDate before: ${cutoffDate}`);
 
     try {
@@ -589,7 +589,8 @@ function logStopArrivalToMemory({ busId, stopId }) {
   }
 }
 
-let liveBusesMap = {}; // { busId: socketId }
+// Prevent any connection in first 5s after a disconnect for same busId
+const cooldowns = new Map();
 io.on("connection", (socket) => {
   const query = socket.handshake.query;
 
@@ -634,11 +635,18 @@ io.on("connection", (socket) => {
     // 🎯 Priority 6: Live Bus (driver/conductor)
   } else if (socket.liveBusId) {
     const busId = socket.liveBusId.toString();
+
+    const now = Date.now();
+
+    if (cooldowns.has(busId) && now - cooldowns.get(busId) < 5000) {
+      console.log(`⏳ Rejecting ${busId} — still in cooldown`);
+
+      socket.disconnect(true);
+      return;
+    }
+
     if (liveBuses.includes(busId)) {
-      console.log(
-        "Making Client To Refresh Page........................................"
-      );
-      socket.emit("refreshIntervalRequest", busId);
+      console.log(`liveBuses mai abhi bhi busId hai ...........`);
       socket.disconnect(true);
       return;
     }
@@ -1207,10 +1215,7 @@ io.on("connection", (socket) => {
     // 🚌 Live Bus (driver/conductor)
     if (socket.liveBusId) {
       const busId = socket.liveBusId;
-
-      if (busId && liveBuses[busId] === socket.id) {
-        delete liveBuses[busId];
-      }
+      cooldowns.set(busId, Date.now());
 
       const index = liveBuses.indexOf(busId);
       if (index !== -1) {
@@ -1264,8 +1269,6 @@ const startServer = async () => {
     } else {
       console.log("✅ Admin user already exists.");
     }
-
-    liveBuses = [];
 
     console.log("✅ MongoDB connected successfully.");
 

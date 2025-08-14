@@ -2,6 +2,7 @@ let socket = null;
 let isProvidingLocation = false;
 
 let previousPoint = null;
+
 let distanceCovered = 0;
 window._wasManuallyRejected = false;
 
@@ -29,30 +30,31 @@ function connectionDenied(message, errorType = "gpsApart") {
   }
 
   const html = `
-    <div class="col-12 grid-margin stretch-card" id="goBack">
-      <div class="card">
-        <div class="card-body">
-          <h4 class="card-title">${user.name} (${user.role})</h4>
-          <p class="card-description">${message}</p>
-          <div class="template-demo">
-            <button class="btn btn-danger btn-fw">
-              <a href="/DC" style="text-decoration: none; color: inherit;">वापस जाएँ</a>
-            </button>
-  <button class="btn btn-success btn-fw"
-    onclick="window.location.href='/DC/goLive'" 
-    ${errorType === "gps" ? "" : "disabled"}>
-    ${
-      errorType === "gps"
-        ? "🔁 फिर से प्रयास करें"
-        : "🔁 फिर से कनेक्ट हो रहा है"
-    }
-  </button>
+  <div class="col-12 grid-margin stretch-card" id="goBack">
+    <div class="card">
+      <div class="card-body">
+        <h4 class="card-title">${user.name} (${user.role})</h4>
+        <p class="card-description">${message}</p>
 
-          </div>
-        </div>
+        ${
+          errorType === "gps"
+            ? `
+              <div class="template-demo">
+                <button class="btn btn-danger btn-fw">
+                  <a href="/DC" style="text-decoration: none; color: inherit;">वापस जाएँ</a>
+                </button>
+                <button class="btn btn-success btn-fw" onclick="window.location.href='/DC/goLive'">
+                  🔁 फिर से प्रयास करें
+                </button>
+              </div>
+            `
+            : ""
+        }
+
       </div>
     </div>
-  `;
+  </div>
+`;
 
   const temp = document.createElement("div");
   temp.innerHTML = html.trim();
@@ -64,10 +66,10 @@ function connectionDenied(message, errorType = "gpsApart") {
     mainRow.appendChild(temp.firstChild);
   }
 
-  if (errorType == "gps") {
+  if (errorType == "gps" && isProvidingLocation) {
     setTimeout(() => {
       window.location.reload();
-    }, 10000);
+    }, 3000);
   }
 }
 
@@ -199,8 +201,16 @@ function handleGeolocationError(error) {
   if (typeof safeSpeakHindi === "function") safeSpeakHindi(suggestion);
 }
 
+let reconnectAttempt = 0;
 function buildConnection() {
+  if (socket) {
+    console.log("🧹 Cleaning up old socket listners to prevent memery leak");
+    socket.removeAllListeners(); // Clean up all previous listeners
+    socket.connected && socket.disconnect(); // <- add this
+  }
+
   socket = io({
+    reconnection: false,
     timeout: 20000, // Connection timeout
     query: { role: user.role, liveBusId: bus._id },
   });
@@ -213,25 +223,30 @@ function buildConnection() {
   socket.on("disconnectReason", (msg) => {
     if (msg === "duplicate_connection") window._wasManuallyRejected = true;
   });
+
   socket.on("connect_timeout", () => {
     console.warn("⏰ Connection timed out after 20s");
+    let msg;
+    if (isProvidingLocation) {
+      msg =
+        "⏰ **कनेक्शन समय समाप्त हो गया है।**\n\n🔄 कृपया प्रतीक्षा करें, हम पुनः कनेक्ट करने का प्रयास कर रहे हैं। जैसे ही नेटवर्क उपलब्ध होगा, कनेक्शन स्वतः स्थापित हो जाएगा।";
+    } else {
+      msg = "कनेक्शन समय समाप्त हो गया। कृपया फिर से प्रयास करें।";
+    }
 
-    msg = "कनेक्शन समय समाप्त हो गया। कृपया फिर से प्रयास करें।";
     connectionDenied(msg);
   });
 
   // this ois the refreshing event to make the page is refres or redirect he user to back to index.page
 
-  socket.on("refreshIntervalRequest", () => {
-    socket.disconnect();
-    setTimeout(() => {
-      console.log("🔄 Refreshing the page...");
-      window.location.href = "/DC";
-    }, 1000);
-  });
+  // socket.on("refreshIntervalRequest", () => {
+  //   socket.disconnect();
+  //   setTimeout(() => {
+  //     console.log("🔄 Refreshing the page...");
+  //     window.location.href = "/DC";
+  //   }, 1000);
+  // });
   socket.on("disconnect", (reason) => {
-    window.location.href = "/DC";
-    return;
     console.log("Disconnect reason:", reason);
 
     cleanupConnection();
@@ -263,10 +278,15 @@ function buildConnection() {
       msg = "❓ अज्ञात कारण से कनेक्शन टूट गया।";
     }
 
-    if (msg) connectionDenied(msg);
+   if (msg) {
+     msg += "\n\n🔄 **कनेक्ट किया जा रहा है... कृपया प्रतीक्षा करें।**";
+     connectionDenied(msg);
+   }
 
     // Optional: Reset the manual flag
     window._wasManuallyRejected = false;
+
+    scheduleReconnect();
   });
 
   // Manually Disconnectin Socket Beofore Page is closed and Page si refreshed .
@@ -297,6 +317,19 @@ function buildConnection() {
       collectionIceCandidateInfo();
     }
   });
+}
+
+function scheduleReconnect() {
+  reconnectAttempt++;
+  // const delay = reconnectAttempt * 2000; // 2s, 4s, 6s, 8s...
+  const delay = 5000;
+
+  console.log(`⏳ Reconnecting in ${delay / 1000} seconds...`);
+
+  setTimeout(() => {
+    console.log(`🔁 Attempting to reconnect #${reconnectAttempt}`);
+    buildConnection();
+  }, delay);
 }
 
 function cleanupConnection() {
@@ -1036,7 +1069,7 @@ function DistanceCover(lat, lng, accuracy) {
   }
 }
 
-setTimeout(() => {
+setInterval(() => {
   if (socket && socket.connected && distanceCovered > 0) {
     socket.emit("distanceAdding", { busId: bus._id, distanceCovered });
     distanceCovered = 0;
