@@ -170,7 +170,7 @@ setTimeout(() => {
       timeout: 15000,
     }
   );
-}, 4000);
+}, 5000);
 
 function handleGeolocationError(error) {
   const messages = {
@@ -292,7 +292,7 @@ function buildConnection() {
     }
 
     if (msg) {
-      msg += "\n\n🔄 **कनेक्ट किया जा रहा है... कृपया प्रतीक्षा करें।**";
+      msg += "<br><br>🔄 <b>कनेक्ट किया जा रहा है... कृपया प्रतीक्षा करें।</b>";
       connectionDenied(msg);
     }
 
@@ -331,7 +331,6 @@ function buildConnection() {
     }
   });
 }
-
 
 function scheduleReconnect() {
   if (isReconnecting) return; // already reconnecting

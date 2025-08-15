@@ -638,7 +638,7 @@ io.on("connection", (socket) => {
 
     const now = Date.now();
 
-    if (cooldowns.has(busId) && now - cooldowns.get(busId) < 5000) {
+    if (cooldowns.has(busId) && now - cooldowns.get(busId) < 3000) {
       console.log(`⏳ Rejecting ${busId} — still in cooldown`);
 
       socket.disconnect(true);
