@@ -31,7 +31,7 @@ const busActivityLogSchema = new Schema({
     {
       campus: {
         type: String,
-        rquired: true,
+        required: true,
       },
       event: { type: String, enum: ["Entered", "Exited"], required: true },
 
@@ -67,8 +67,7 @@ const busActivityLogSchema = new Schema({
   },
 });
 
-const BusActivityLog = model("BusActivityLog", busActivityLogSchema);
-
 busActivityLogSchema.index({ bus: 1, logDate: 1 }, { unique: true });
+const BusActivityLog = model("BusActivityLog", busActivityLogSchema);
 
 export default BusActivityLog;

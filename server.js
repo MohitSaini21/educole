@@ -12,6 +12,7 @@ import os from "os";
 import { setAllRouteStops } from "./utils/busRouteStops.js";
 import { getBusCacheData } from "./utils/busRouteStops.js";
 import BusActivityLog from "./model/busTrack.js";
+import newsaveLogs from "./utils/newSaveLogs.js";
 
 import jwt from "jsonwebtoken";
 
@@ -159,7 +160,10 @@ cron.schedule(
 
     // 🔹 Clear in-memory object used for location checks
     console.log("🕛 12:00 AM IST: Clearing lastEvaluated memory...");
+
     for (const busId in lastEvaluated) {
+      await newsaveLogs(lastEvaluated[busId]);
+
       delete lastEvaluated[busId];
     }
     console.log("🧹 Cleared all entries from lastEvaluated");
@@ -1242,9 +1246,9 @@ io.on("connection", (socket) => {
         console.log(`🧹 Cleaned peers for ${busId}`);
       }
 
-      if (lastEvaluated[busId]) {
-        await saveLogs(lastEvaluated[busId]); // async-safe
-      }
+      // if (lastEvaluated[busId]) {
+      //   await saveLogs(lastEvaluated[busId]); // async-safe
+      // }
     }
   });
 });

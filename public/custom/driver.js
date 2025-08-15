@@ -13,7 +13,7 @@ let recorder = null;
 let chunks = [];
 let isSharing = false;
 
-const RADIUS_METERS = 300;
+const RADIUS_METERS = 500;
 let mediaStream = null;
 let isShowingRoute = false; // Track current state
 
@@ -103,7 +103,7 @@ function saveLocation(position) {
   );
 
   if (isSame) {
-    return baseData;
+    return null;
   }
 
   // ✅ Update previous point and return new data
@@ -229,9 +229,9 @@ function buildConnection() {
     }
   });
 
-  socket.on("refreshRequest", (busId) => {
-    window.location.reload();
-  });
+  // socket.on("refreshRequest", (busId) => {
+  //   window.location.reload();
+  // });
 
   socket.on("disconnectReason", (msg) => {
     if (msg === "duplicate_connection") window._wasManuallyRejected = true;
@@ -250,15 +250,6 @@ function buildConnection() {
     connectionDenied(msg);
   });
 
-  // this ois the refreshing event to make the page is refres or redirect he user to back to index.page
-
-  // socket.on("refreshIntervalRequest", () => {
-  //   socket.disconnect();
-  //   setTimeout(() => {
-  //     console.log("🔄 Refreshing the page...");
-  //     window.location.href = "/DC";
-  //   }, 1000);
-  // });
   socket.on("disconnect", (reason) => {
     console.log("Disconnect reason:", reason);
 

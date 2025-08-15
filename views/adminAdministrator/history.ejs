@@ -26,8 +26,6 @@
     <link rel="stylesheet" href="/assets/loader.css" />
     <!-- End layout styles -->
 
-    
-
     <style>
       .custom-modal {
         display: none;
@@ -115,10 +113,13 @@
                     Bus Record for <%= bus.busNumber %> on <%=
                     moment(busLog.logDate, "YYYY-MM-DD").format("DD-MM-YYYY") %>
                     <br />
-                   </p>
+                  </p>
+
+                  <p>Covered Distance <%=busLog.distanceCovered %> Km</p>
                 </h6>
                 <br />
                 <ul class="nav nav-pills mb-3" id="pills-tab" role="tablist">
+                  <% if (busLog.path.length>1) { %>
                   <li class="nav-item" role="presentation">
                     <button
                       class="nav-link active"
@@ -133,6 +134,8 @@
                       Routes
                     </button>
                   </li>
+                  <% } %>
+
                   <li class="nav-item" role="presentation">
                     <button
                       class="nav-link"
@@ -163,6 +166,7 @@
                   </li>
                 </ul>
                 <div class="tab-content" id="pills-tabContent">
+                  <% if (busLog.path.length>1) { %>
                   <div
                     class="tab-pane fade show active"
                     id="pills-home"
@@ -209,6 +213,8 @@
                       </div>
                     </div>
                   </div>
+                  <% } %>
+
                   <div
                     class="tab-pane fade"
                     id="pills-profile"

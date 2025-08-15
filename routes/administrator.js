@@ -588,11 +588,12 @@ router.post("/driverRow/:id", async (req, res) => {
       }
     }
 
-    // Redirect after disconnect
+    // Redirect after disconnect  
+    
     return res.redirect(
       `/administrator/settings/conductorDriver?driverId=${driver._id}`
     );
-  } catch (error) {
+  } catch (error) { 
     console.error("🔥 Error in driver update and socket logic:", error);
     return res.status(500).json({ message: "Internal server error" });
   }
