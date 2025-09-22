@@ -103,7 +103,7 @@ function saveLocation(position) {
   );
 
   if (isSame) {
-    return null;
+    return baseData;
   }
 
   // ✅ Update previous point and return new data
