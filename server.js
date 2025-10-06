@@ -757,23 +757,23 @@ io.on("connection", (socket) => {
   });
 
   //  admin initiating the web-cam
-  socket.on("InitiateWebCam", (data, callback) => {
-    const { busId } = data;
-    if (liveBuses.includes(busId)) {
-      io.to(busSocketsIds[busId]).emit("initiateWebCam", {
-        bus: { _id: busId },
-      });
-      callback({
-        success: true,
-        msg: "wait for live View and hold on 5 seconds",
-      });
-    } else {
-      callback({
-        success: false,
-        msg: "Bus is not live now and we can not share the live View",
-      });
-    }
-  });
+  // socket.on("InitiateWebCam", (data, callback) => {
+  //   const { busId } = data;
+  //   if (liveBuses.includes(busId)) {
+  //     io.to(busSocketsIds[busId]).emit("initiateWebCam", {
+  //       bus: { _id: busId },
+  //     });
+  //     callback({
+  //       success: true,
+  //       msg: "Hold on 5s",
+  //     });
+  //   } else {
+  //     callback({
+  //       success: false,
+  //       msg: "No Signal",
+  //     });
+  //   }
+  // });
 
   // Handle admin's answer to the offer from the driver
   socket.on("admin-answer", ({ busId, answer }) => {

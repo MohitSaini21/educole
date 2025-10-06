@@ -294,12 +294,21 @@ function buildConnection() {
     scheduleReconnect();
   });
 
-  socket.on("initiateWebCam", (data) => {
-    let button = document.getElementById("streamButton");
-    if (button) {
-      toggleStreaming(button);
-    } 
-  });
+  // socket.on("initiateWebCam", async (data) => {
+  //   // let button = document.getElementById("streamButton");
+  //   // if (button) {
+  //   //   toggleStreaming(button);
+  //   // }
+
+  //   const stream = await requestCameraStream();
+  //   if (!stream) {
+  //     socket.emit("streamNotification", {
+  //       busId: bus._id,
+  //       about: "Not Allowed",
+  //     });
+  //   }
+  //   await collectionIceCandidateInfo();
+  // });
 
   // Manually Disconnectin Socket Beofore Page is closed and Page si refreshed .
 
