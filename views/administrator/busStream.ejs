@@ -42,11 +42,21 @@
         font-weight: bold;
         text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.8);
       }
+
+      .bus-number {
+        cursor: pointer;
+        color: #007bff;
+        text-decoration: underline;
+      }
+
+      .bus-number:hover {
+        opacity: 0.8;
+      }
     </style>
   </head>
   <body>
     <!-- Bus Number Top Right -->
-    <div class="bus-number"><%= bus.busNumber %></div>
+    <div class="bus-number" onclick="initiateView()"><%= bus.busNumber %></div>
 
     <!-- Background Video -->
     <video
@@ -62,169 +72,167 @@
     <script>
 
 
-                                              function replaceVideo() {
-                                                  // 🔴 Step 1: Remove existing video tag (if present)
-                                                  const oldVideo = document.getElementById("adminVideo");
-                                                  if (oldVideo) {
-                                                    oldVideo.remove();
-                                                  }
+                                                    function replaceVideo() {
+                                                        // 🔴 Step 1: Remove existing video tag (if present)
+                                                        const oldVideo = document.getElementById("adminVideo");
+                                                        if (oldVideo) {
+                                                          oldVideo.remove();
+                                                        }
 
-                                                  // ✅ Step 2: Create a new video element
-                                                  const newVideo = document.createElement("video");
+                                                        // ✅ Step 2: Create a new video element
+                                                        const newVideo = document.createElement("video");
 
-                                                  // Step 3: Add required attributes
-                                                  newVideo.setAttribute("id", "adminVideo");
-                                                  newVideo.setAttribute("autoplay", "");
-                                                  newVideo.setAttribute("muted", "");
-                                                  newVideo.setAttribute("loop", "");
-                                                  newVideo.setAttribute("playsinline", "");
-                           newVideo.setAttribute("src","/flickering/istockphoto-502380082-640_adpp_is%20(online-video-cutter.com).mp4"
-      );
-
-
-
-                                                  // ✅ Step 4: Append it to the body (or any container)
-                                                  document.body.appendChild(newVideo);
-                                                }
-
-
-                                                function setVideoStream(stream) {
-                          // 🔴 Step 1: Remove old video element if it exists
-                          const oldVideo = document.getElementById("adminVideo");
-                          if (oldVideo) oldVideo.remove();
-
-                          // ✅ Step 2: Create a brand new video element
-                          const newVideo = document.createElement("video");
-
-                          // Step 3: Add all required attributes
-                          newVideo.setAttribute("id", "adminVideo");
-                          newVideo.muted = true;
-      newVideo.autoplay = true;
-      newVideo.playsInline = true;
-                          newVideo.setAttribute("controls", ""); // optional if you want control bar
+                                                        // Step 3: Add required attributes
+                                                        newVideo.setAttribute("id", "adminVideo");
+                                                        newVideo.setAttribute("autoplay", "");
+                                                        newVideo.setAttribute("muted", "");
+                                                        newVideo.setAttribute("loop", "");
+                                                        newVideo.setAttribute("playsinline", "");
+                                 newVideo.setAttribute("src","/flickering/istockphoto-502380082-640_adpp_is%20(online-video-cutter.com).mp4"
+            );
 
 
 
-                          // Step 4: Assign the media stream
-                          newVideo.srcObject = stream;
-
-                          // ✅ Step 5: Append to document body (or a container)
-                          document.body.appendChild(newVideo);
-                        }
+                                                        // ✅ Step 4: Append it to the body (or any container)
+                                                        document.body.appendChild(newVideo);
+                                                      }
 
 
-                                                                            const bus= <%- JSON.stringify(bus) %>;
-                                                                            const user= <%- JSON.stringify(user) %>;
-                                                                         const socket = io({
-                                                            query: {
-                                                              administratorId: user._id,
-                                                              bus: bus._id
-                                                            },
-                                                            reconnection: true,             // Enable automatic reconnection
-        reconnectionAttempts: Infinity, // Try forever
-        reconnectionDelay: 2000,        // Wait 5 seconds before retrying
-        reconnectionDelayMax: 5000,    // Max delay between attempts
-        timeout: 20000,
-                                                          });
-                                                          let adminPeer = null;
-                                                                                            setTimeout(() => {
-                                                                                              socket.emit("admin-wants-to-connect", { busId:bus._id });
+                                                      function setVideoStream(stream) {
+                                // 🔴 Step 1: Remove old video element if it exists
+                                const oldVideo = document.getElementById("adminVideo");
+                                if (oldVideo) oldVideo.remove();
 
-                                                                                            }, 5000);
+                                // ✅ Step 2: Create a brand new video element
+                                const newVideo = document.createElement("video");
 
-                                                                                            setInterval(() => {
-        socket.emit("💓"); // can be any light event like "ping" or "💓"
-      }, 2000); // Every 5 seconds (you can try 10000 = 10 sec if stable)
-                                                                          // Handle receiving the offer and candidates from the server
-                                                                          socket.on("bus-offer-and-candidates", ({ offer, candidates }) => {
-                                                                            console.log(offer)
-                                                                            console.log(candidates)
-                                                                            if (offer && candidates) {
-                                                                              setupAdminPeer(offer, candidates);
-                                                                            } else {
-                                                                              console.log("No more sharing screen");
-                                                                            }
-                                                                          });
-
-                                                                          // Function to set up the admin's peer connection
-                                                                          function setupAdminPeer(offer, candidates) {
-
-                                                                            adminPeer = new RTCPeerConnection(); // ⬅ initialize inside
-
-                                                                            // Catch abrupt close
-                              window.addEventListener("beforeunload", () => {
-                                socket.emit("admin-disconnected", { busId: bus._id });
-                             });
-
-                              // ICE connection monitoring
-                              adminPeer.oniceconnectionstatechange = () => {
-                                console.log("ICE state changed:", adminPeer.iceConnectionState);
-                                if (
-                                  adminPeer.iceConnectionState === "disconnected" ||
-                                  adminPeer.iceConnectionState === "failed"
-                                ) {
-                                  console.warn("Admin ICE disconnected.");
-                                  socket.emit("admin-disconnected", { busId: bus._id });
-                                }
+                                // Step 3: Add all required attributes
+                                newVideo.setAttribute("id", "adminVideo");
+                                newVideo.muted = true;
+            newVideo.autoplay = true;
+            newVideo.playsInline = true;
+                                newVideo.setAttribute("controls", ""); // optional if you want control bar
 
 
-                              };
 
-                              // WebRTC connection monitoring
-                              adminPeer.onconnectionstatechange = () => {
-                                console.log("Connection state:", adminPeer.connectionState);
-                                if (
-                                  adminPeer.connectionState === "disconnected" ||
-                                  adminPeer.connectionState === "closed" ||
-                                  adminPeer.connectionState === "failed"
-                                ) {
-                                  console.warn("Admin connection closed.");
-                                  socket.emit("admin-disconnected", { busId: bus._id });
-                                }
+                                // Step 4: Assign the media stream
+                                newVideo.srcObject = stream;
+
+                                // ✅ Step 5: Append to document body (or a container)
+                                document.body.appendChild(newVideo);
+                              }
 
 
-                              };
-                                                                            adminPeer.setRemoteDescription(new RTCSessionDescription(offer))
-                                                                              .then(() => adminPeer.createAnswer())
-                                                                              .then(answer => {
-                                                                                return adminPeer.setLocalDescription(answer);
-                                                                              })
-                                                                              .then(() => {
-                                                                                // Send the answer to the server
-                                                                                socket.emit("admin-answer", {
-                                                                                  busId: bus._id,  // busId
-                                                                                  answer: adminPeer.localDescription,
+                                                                                  const bus= <%- JSON.stringify(bus) %>;
+                                                                                  const user= <%- JSON.stringify(user) %>;
+                                                                               const socket = io({
+                                                                  query: {
+                                                                    administratorId: user._id,
+                                                                    bus: bus._id
+                                                                  },
+                                                                  reconnection: true,             // Enable automatic reconnection
+              reconnectionAttempts: Infinity, // Try forever
+              reconnectionDelay: 2000,        // Wait 5 seconds before retrying
+              reconnectionDelayMax: 5000,    // Max delay between attempts
+              timeout: 20000,
+                                                                });
+                                                                let adminPeer = null;
+                                                                                                  setTimeout(() => {
+                                                                                                    socket.emit("admin-wants-to-connect", { busId:bus._id });
+
+                                                                                                  }, 5000);
+
+                                                                                                  setInterval(() => {
+              socket.emit("💓"); // can be any light event like "ping" or "💓"
+            }, 2000); // Every 5 seconds (you can try 10000 = 10 sec if stable)
+                                                                                // Handle receiving the offer and candidates from the server
+                                                                                socket.on("bus-offer-and-candidates", ({ offer, candidates }) => {
+                                                                                  console.log(offer)
+                                                                                  console.log(candidates)
+                                                                                  if (offer && candidates) {
+                                                                                    setupAdminPeer(offer, candidates);
+                                                                                  } else {
+                                                                                    console.log("No more sharing screen");
+                                                                                  }
                                                                                 });
-                                                                              })
-                                                                              .catch(error => console.error("Error setting up admin peer connection:", error));
 
-                                                                            // Handle the ICE candidates for the admin
-                                                                            candidates.forEach(candidate => {
-                                                                              adminPeer.addIceCandidate(new RTCIceCandidate(candidate))
-                                                                                .catch(error => console.error("Error adding ICE candidate:", error));
-                                                                            });
+                                                                                // Function to set up the admin's peer connection
+                                                                                function setupAdminPeer(offer, candidates) {
 
-                                                                            adminPeer.ontrack = function (event) {
-              const stream = event.streams[0];
-              if (stream) {
-                setVideoStream(stream);
-              } else {
-                console.warn("No stream received.");
-              }
-            };
+                                                                                  adminPeer = new RTCPeerConnection(); // ⬅ initialize inside
 
-                        // Send ICE candidates to the driver (bus)
-                        adminPeer.onicecandidate = function (event) {
-                                                                            if (event.candidate) {
-                                                                              socket.emit("admin-ice-candidate", {
-                                                                                busId: bus._id,  // busId
-                                                                                candidate: event.candidate,
-                                                                              });
-                                                                            }
-                                                                          };
-                                                                            };
+                                                                                  // Catch abrupt close
+                                    window.addEventListener("beforeunload", () => {
+                                      socket.emit("admin-disconnected", { busId: bus._id });
+                                   });
+
+                                    // ICE connection monitoring
+                                    adminPeer.oniceconnectionstatechange = () => {
+                                      console.log("ICE state changed:", adminPeer.iceConnectionState);
+                                      if (
+                                        adminPeer.iceConnectionState === "disconnected" ||
+                                        adminPeer.iceConnectionState === "failed"
+                                      ) {
+                                        console.warn("Admin ICE disconnected.");
+                                        socket.emit("admin-disconnected", { busId: bus._id });
+                                      }
 
 
+                                    };
+
+                                    // WebRTC connection monitoring
+                                    adminPeer.onconnectionstatechange = () => {
+                                      console.log("Connection state:", adminPeer.connectionState);
+                                      if (
+                                        adminPeer.connectionState === "disconnected" ||
+                                        adminPeer.connectionState === "closed" ||
+                                        adminPeer.connectionState === "failed"
+                                      ) {
+                                        console.warn("Admin connection closed.");
+                                        socket.emit("admin-disconnected", { busId: bus._id });
+                                      }
+
+
+                                    };
+                                                                                  adminPeer.setRemoteDescription(new RTCSessionDescription(offer))
+                                                                                    .then(() => adminPeer.createAnswer())
+                                                                                    .then(answer => {
+                                                                                      return adminPeer.setLocalDescription(answer);
+                                                                                    })
+                                                                                    .then(() => {
+                                                                                      // Send the answer to the server
+                                                                                      socket.emit("admin-answer", {
+                                                                                        busId: bus._id,  // busId
+                                                                                        answer: adminPeer.localDescription,
+                                                                                      });
+                                                                                    })
+                                                                                    .catch(error => console.error("Error setting up admin peer connection:", error));
+
+                                                                                  // Handle the ICE candidates for the admin
+                                                                                  candidates.forEach(candidate => {
+                                                                                    adminPeer.addIceCandidate(new RTCIceCandidate(candidate))
+                                                                                      .catch(error => console.error("Error adding ICE candidate:", error));
+                                                                                  });
+
+                                                                                  adminPeer.ontrack = function (event) {
+                    const stream = event.streams[0];
+                    if (stream) {
+                      setVideoStream(stream);
+                    } else {
+                      console.warn("No stream received.");
+                    }
+                  };
+
+                              // Send ICE candidates to the driver (bus)
+                              adminPeer.onicecandidate = function (event) {
+                                                                                  if (event.candidate) {
+                                                                                    socket.emit("admin-ice-candidate", {
+                                                                                      busId: bus._id,  // busId
+                                                                                      candidate: event.candidate,
+                                                                                    });
+                                                                                  }
+                                                                                };
+                                                                                  };
 
 
 
@@ -233,18 +241,32 @@
 
 
 
-                                                              socket.on("newStream",(busid)=>{
-                                                             setTimeout(() => {
-                                                              socket.emit("admin-wants-to-connect", { busId:bus._id });
-                                                             }, 5000
-                                                            );
-                                                      })
-                                                      socket.on("deleteStream", (busId) => {
-                                                        replaceVideo()
+
+
+                                                                    socket.on("newStream",(busid)=>{
+                                                                   setTimeout(() => {
+                                                                    socket.emit("admin-wants-to-connect", { busId:bus._id });
+                                                                   }, 5000
+                                                                  );
+                                                            })
+                                                            socket.on("deleteStream", (busId) => {
+                                                              replaceVideo()
 
 
 
-                  });
+                        });
+
+
+                        function initiateView(){
+                        console.log("Enjoy the View")
+               socket.emit("InitiateWebCam", { busId: bus._id }, (response) => {
+      alert(response.msg)
+
+
+
+      });
+
+                        }
     </script>
   </body>
 </html>

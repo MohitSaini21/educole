@@ -129,6 +129,7 @@ let adminConnectionsBus = {};
 let administratorConnectionsBus = {};
 
 let lastLocation = new Map();
+let busSocketsIds = {};
 
 let locationEvaluationCooldown = 10000; // ms (5 seconds)
 let lastEvaluated = {}; // { [busId]: timestamp }
@@ -656,6 +657,9 @@ io.on("connection", (socket) => {
     }
 
     liveBuses.push(busId);
+
+    registerSocket(busSocketsIds, busId, socket, "New Driver Connections");
+
     console.log(`🟢 Bus ${busId} is now live with socket ${socket.id}`);
 
     // Notify admins
@@ -748,6 +752,25 @@ io.on("connection", (socket) => {
       io.to(peers[busId].socketID).emit("ice-candidate", {
         bus: { _id: busId },
         candidate: candidate,
+      });
+    }
+  });
+
+  //  admin initiating the web-cam
+  socket.on("InitiateWebCam", (data, callback) => {
+    const { busId } = data;
+    if (liveBuses.includes(busId)) {
+      io.to(busSocketsIds[busId]).emit("initiateWebCam", {
+        bus: { _id: busId },
+      });
+      callback({
+        success: true,
+        msg: "wait for live View and hold on 5 seconds",
+      });
+    } else {
+      callback({
+        success: false,
+        msg: "Bus is not live now and we can not share the live View",
       });
     }
   });
@@ -1220,6 +1243,7 @@ io.on("connection", (socket) => {
     if (socket.liveBusId) {
       const busId = socket.liveBusId;
       cooldowns.set(busId, Date.now());
+      removeSocketFromMap(busSocketsIds, busId, socket.id, "Driver Connection");
 
       const index = liveBuses.indexOf(busId);
       if (index !== -1) {

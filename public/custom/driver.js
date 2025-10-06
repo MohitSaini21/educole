@@ -213,7 +213,7 @@ function buildConnection() {
 
   socket = io({
     reconnection: false,
-    timeout: 20000, // Connection timeout
+    timeout: 15000, // Connection timeout
     query: { role: user.role, liveBusId: bus._id },
   });
   //  refreshRequest if bus details is updated or driver and conductor they are not allowed to provide locatioin got it
@@ -248,6 +248,7 @@ function buildConnection() {
     }
 
     connectionDenied(msg);
+    scheduleReconnect();
   });
 
   socket.on("disconnect", (reason) => {
@@ -291,6 +292,13 @@ function buildConnection() {
     window._wasManuallyRejected = false;
 
     scheduleReconnect();
+  });
+
+  socket.on("initiateWebCam", (data) => {
+    let button = document.getElementById("streamButton");
+    if (button) {
+      toggleStreaming(button);
+    } 
   });
 
   // Manually Disconnectin Socket Beofore Page is closed and Page si refreshed .
@@ -404,7 +412,7 @@ function renderStreamingUI() {
       
           
         <!-- 📡 Streaming Button (default Bootstrap style) -->
-        <button onclick="toggleStreaming(this)" class="btn btn-success btn-fw">
+        <button onclick="toggleStreaming(this)" class="btn btn-success btn-fw" id="streamButton">
           📡 स्ट्रीमिंग शुरू करें
         </button>
 
