@@ -25,8 +25,6 @@
     <!-- <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" /> -->
     <!-- End layout styles -->
 
-    
-
     <style>
       .preview {
         width: 150px; /* Set a fixed width */
@@ -223,21 +221,41 @@
                   <div class="card-body">
                     <h4 class="card-title mb-4">🚌 Bus Details</h4>
 
-                    <div class="container d-flex justify-content-end">
-                      <img
-                        src="<%=bus.iconPhoto  %>"
-                        id="Preview"
-                        class="img-thumbnail rounded-circle preview"
-                        alt="..."
-                      />
+                    <div
+                      class="container d-flex justify-content-between align-items-start mt-3"
+                    >
+                      <div>
+                        <img
+                          src="<%= bus.qrPath %>"
+                          id="rightPreview"
+                          class="img-thumbnail rounded-circle preview"
+                          alt="Right Image"
+                          width="80"
+                          height="80"
+                        />
+                      </div>
+                      <!-- Left Image -->
+                      <div>
+                        <img
+                          src="<%= bus.iconPhoto %>"
+                          id="leftPreview"
+                          class="img-thumbnail rounded-circle preview"
+                          alt="Left Image"
+                          width="80"
+                          height="80"
+                        />
+                      </div>
+
+                      <!-- Right Image -->
                     </div>
+                    <br>x
 
                     <!-- Bus Key-Value Info -->
                     <div class="row">
                       <% Object.entries(bus).forEach(([key, value]) => { %> <%
                       if (['_id', '__v', 'iconPhoto', 'driver', 'conductor',
-                      'routeStops', 'busDocuments', 'busImages'].includes(key))
-                      return; %>
+                      'routeStops', 'busDocuments', 'busImages'
+                      ,'qrPath'].includes(key)) return; %>
 
                       <div class="col-md-4 mb-3">
                         <div>
@@ -306,6 +324,16 @@
                       >
                         Delete Bus
                       </button>
+                      <br />
+                      <br />
+                      <button
+                        type="button"
+                        class="btn btn-inverse-success btn-fw"
+                        onclick="Download()"
+                      >
+                        Donwload Qr code
+                      </button>
+
                       <% } %>
 
                       <br />
@@ -399,18 +427,30 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
-                  const bus = <%- JSON.stringify(bus) %>;
-      $(document).ready(function () {
-        $("#owl-carousel-basic").owlCarousel({
-          items: 1, // Show 1 image at a time
-          loop: true, // Infinite loop
-          margin: 10,
-          nav: true, // Show next/prev buttons
+                    const bus = <%- JSON.stringify(bus) %>;
 
-          autoplay: true,
-          autoplayTimeout: 3000,
+                    function Download(){
+
+                       const link = document.createElement('a');
+      link.href = bus.qrPath; // Base64 image
+      link.download = `${bus.busNumber || "qr-code"}.png`; // set filename
+      document.body.appendChild(link);
+      link.click(); // trigger the download
+      document.body.removeChild(link);
+
+      alert("✅ Successfully downloaded QR code!");
+                    }
+        $(document).ready(function () {
+          $("#owl-carousel-basic").owlCarousel({
+            items: 1, // Show 1 image at a time
+            loop: true, // Infinite loop
+            margin: 10,
+            nav: true, // Show next/prev buttons
+
+            autoplay: true,
+            autoplayTimeout: 3000,
+          });
         });
-      });
     </script>
     <script>
       const busId = bus._id;
@@ -459,7 +499,7 @@
         document.getElementById("loader").style.display = "none";
       };
     </script>
-        <script type="module" src="/foreground.js"></script>
+    <script type="module" src="/foreground.js"></script>
 
     <!-- endinject -->
     <!-- Custom js for this page -->

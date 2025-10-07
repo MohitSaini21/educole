@@ -6,6 +6,7 @@ import Driver from "../model/driver.js";
 import Conductor from "../model/conductor.js";
 import multer from "multer";
 import fs from "fs";
+import QRCode from "qrcode";
 import path from "path";
 import { setAllRouteStops } from "../utils/busRouteStops.js";
 import { fileURLToPath } from "url";
@@ -166,7 +167,9 @@ router.post("/addBus", async (req, res) => {
         distanceTravelled,
       });
 
-      busDocId = newBus._id;
+      const busDocId = newBus._id.toString(); // ✅ Convert to string
+      newBus.qrPath = await QRCode.toDataURL(busDocId);
+      await newBus.save(); // ✅ Wait for save to complete
 
       // 🔄 Link Bus ID to Driver & Conductor
       if (driverDocId) {
@@ -588,12 +591,12 @@ router.post("/driverRow/:id", async (req, res) => {
       }
     }
 
-    // Redirect after disconnect  
-    
+    // Redirect after disconnect
+
     return res.redirect(
       `/administrator/settings/conductorDriver?driverId=${driver._id}`
     );
-  } catch (error) { 
+  } catch (error) {
     console.error("🔥 Error in driver update and socket logic:", error);
     return res.status(500).json({ message: "Internal server error" });
   }

@@ -51,6 +51,7 @@ const busSchema = new mongoose.Schema(
       enum: ["Operational", "Out of Service"],
       default: "Operational",
     },
+
     fuelType: {
       type: String,
       enum: ["Diesel", "CNG"],
@@ -62,6 +63,9 @@ const busSchema = new mongoose.Schema(
     iconPhoto: {
       type: String,
       default: "/assets/images/faces/busIcon.png",
+    },
+    qrPath: {
+      type: String,
     },
     busImages: {
       type: [String], // This ensures it's an array of strings (for image paths/URLs)
