@@ -159,8 +159,129 @@
   font-weight: 500;
 }
 
+
+
+    #reader { width: 100%; max-width: 300px; margin: auto; }
+
+    
+
+
+    .controls {
+  display: flex;
+  justify-content: center; /* center horizontally */
+  gap: 20px;              /* space between buttons */
+  margin-top: 15px;
+  flex-wrap: wrap;         /* wrap on small screens */
+}
+
+.controls button,
+.controls label {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  padding: 12px 18px;
+  font-size: 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s, transform 0.2s;
+}
+
+.controls button:hover,
+.controls label:hover {
+  background-color: #0056b3;
+  transform: scale(1.1);
+}
+
+.controls i {
+  pointer-events: none; /* so icon doesn’t block clicks */
+}
+
+/* Mobile responsiveness */
+@media (max-width: 500px) {
+  .controls button,
+  .controls label {
+    font-size: 18px;
+    padding: 10px 14px;
+  }
+}
+/* Official QR Scanner Box */
+#reader {
+  position: relative;
+  width: 100%;
+  max-width: 400px;
+  height: 300px;
+  aspect-ratio: 1 / 1;
+  margin: 40px auto;
+  background-color: #f4f6f8;
+  border: 2px solid #d1d5db;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+  transition: box-shadow 0.3s ease, border-color 0.3s ease;
+}
+
+/* Camera active border effect */
+#reader.active {
+  border-color: #007bff;
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.15);
+}
+
+/* Gentle scanning line (very subtle and professional) */
+#reader::before {
+  content: "";
+  position: absolute;
+  top: -20%;
+  left: 0;
+  width: 100%;
+  height: 10%;
+  background: linear-gradient(to bottom, rgba(0, 123, 255, 0.15), rgba(0, 123, 255, 0.05));
+  animation: scanline 3s linear infinite;
+}
+
+@keyframes scanline {
+  0% { top: -20%; }
+  100% { top: 100%; }
+}
+
+/* Subtle inner shadow for depth */
+#reader::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  box-shadow: inset 0 0 10px rgba(0,0,0,0.1);
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+/* Responsive design */
+@media (max-width: 500px) {
+  #reader {
+    max-width: 300px;
+    margin: 20px auto;
+  }
+}
+
+/* Smooth fade-in when showing scanner */
+.fade-in {
+  animation: fadeIn 0.6s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.98); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+
     </style>
     
+    <link
+  rel="stylesheet"
+  href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+/>
+
      
 
 
@@ -185,13 +306,38 @@
 <div class="col-md-6 grid-margin stretch-card">
   <div class="card shadow">
     <div class="card-body text-center">
-      <h4 class="card-title mb-3">🔧 त्वरित संचालन (Quick Actions)</h4>
+      <h4 class="card-title mb-3">🔧 QR Code Scanner</h4>
+              <!-- let's  put here Image box and add the clietn-sdie fiel -->
+ 
 
       <div class="d-flex flex-column align-items-center" style="gap: 16px;">
         <!-- 🟢 ROUND GO LIVE BUTTON -->
-       <a href="/DC/goLive" class="thumb-checkin" title="Check In / Go Live">
+       <!-- <a href="/DC/goLive" class="thumb-checkin" title="Check In / Go Live">
+
+
   🚍
-  </a>
+  </a> -->
+
+  
+
+<!-- Camera preview -->
+<div id="reader" class="fade-in"></div>
+
+<!-- Controls -->
+<!-- Controls -->
+<div class="controls">
+  <button id="rearBtn" title="Use Rear Camera">
+    <i class="fas fa-camera-retro"></i>
+  </button>
+  <button id="frontBtn" title="Use Front Camera">
+    <i class="fas fa-camera"></i>
+  </button>
+  <label title="Upload QR Image">
+    <i class="fas fa-file-upload"></i>
+    <input type="file" id="file-input" accept="image/*" style="display:none;">
+  </label>
+</div>
+
 
   
   <div class="thumb-label">चेक इन</div>
@@ -409,6 +555,121 @@
     <script type="module" src="/wfirebase.js"></script>
     <script type="module" src="/foreground.js"></script>
     <script src="/custom/speak.js"></script>
+<!-- 1. Load the QR library FIRST -->
+<script src="/html5-qrcode.min.js"></script>
+
+
+<!-- 2. THEN run your code -->
+<script>
+  let html5QrCode = new Html5Qrcode("reader");
+ 
+
+  // Function to start camera
+  function startCamera(cameraId) {
+    if (html5QrCode.isScanning) {
+      html5QrCode.stop().then(() => start(cameraId));
+    } else {
+      start(cameraId);
+    }
+
+    function start(id) {
+      html5QrCode.start(
+        id,
+        { fps: 10, qrbox: 250 },
+        decodedText => {
+          window.location.href = `/DC/driverGoLive/${decodedText}`;
+
+          
+        },
+        err => {
+          console.warn("Scanning...", err);
+        }
+      ).catch(err => console.error("Unable to start scanning", err));
+    }
+  }
+
+  // Button events
+   let isToggle = false;
+  document.getElementById("rearBtn").addEventListener("click", () => {
+       if(isToggled){
+           isToggled= !isToggled;
+    }
+     isToggle= !isToggle;
+
+        if (isToggle) {
+    Html5Qrcode.getCameras().then(cameras => {
+      // pick first back-facing camera
+      const rear = cameras.find(cam => /back|rear/i.test(cam.label)) || cameras[0];
+      startCamera(rear.id);
+    });
+    } else {
+      console.log("Button is now OFF");
+       if (html5QrCode.isScanning) {
+      html5QrCode.stop().then(() => console.log("Scanning has been stoped"));
+    } 
+      // Do OFF action
+    }
+  
+  });
+   let isToggled = false;
+
+  document.getElementById("frontBtn").addEventListener("click", () => {
+    if(isToggle){
+           isToggle= !isToggle;
+    }
+
+     isToggled = !isToggled;
+      if (isToggled) {
+     Html5Qrcode.getCameras().then(cameras => {
+      // pick first front-facing camera
+      const front = cameras.find(cam => /front|user/i.test(cam.label)) || cameras[0];
+      startCamera(front.id);
+    });
+    } else {
+      console.log("Button is now OFF");
+       if (html5QrCode.isScanning) {
+      html5QrCode.stop().then(() => console.log("Scanning has been stoped"));
+    } 
+      // Do OFF action
+    }
+  
+  });
+
+  // File upload fallback
+  const fileInput = document.getElementById("file-input");
+  fileInput.addEventListener("change", async (e) => {
+ if (!e.target.files || e.target.files.length === 0) return;
+    const imageFile = e.target.files[0];
+     // Stop camera if running
+  if (html5QrCode.isScanning) {
+    await html5QrCode.stop();
+  }
+  // ✅ Hide reader box before scanning image
+  const readerElem = document.getElementById("reader");
+  // const prevDisplay = readerElem.style.display;
+  // readerElem.style.display = "none";
+
+  html5QrCode.scanFile(imageFile, true)
+    .then(decodedText => {
+      window.location.href = `/DC/driverGoLive/${encodeURIComponent(decodedText)}`;
+    })
+    .catch(err => alert("No QR code found: " + err))
+    .finally(() => {
+      e.target.value = ""; // reset input
+      // ✅ Restore reader box (if you want camera scanning again)
+      readerElem.innerHTML=""
+    });
+
+  });
+    // Cleanup on page close (best-effort)
+  window.addEventListener("beforeunload", () => {
+ if (html5QrCode.isScanning) {
+      html5QrCode.stop().catch(()=>{});
+    }
+  });
+</script>
+
+
 
 
     <!-- End custom js for this page -->

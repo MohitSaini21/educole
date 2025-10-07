@@ -310,6 +310,66 @@ router.get(
   }
 );
 
+//  let's make the flexible route for the drivers and conductors to go live .
+router.get(
+  "/driverGoLive/:busId",
+  checkUserExistenceAndRedirect([
+    "notificationToken",
+    "conductorDocuments",
+    "driverDocuments",
+    "conductorId",
+    "driverId",
+    "password",
+    "address",
+    "joiningDate",
+    "isLogged",
+  ]),
+  async (req, res) => {
+    const { busId } = req.params;
+
+    let bus = await Bus.findById(busId)
+      .select("_id routeStops status busNumber")
+      .lean();
+
+    if (!bus) {
+      return res.status(404).json({ message: "बस की जानकारी नहीं मिली।" });
+    }
+
+    if (bus.status === "Out of Service") {
+      return res.status(403).json({
+        message: "यह बस इस समय सेवा में नहीं है। कृपया प्रशासक से संपर्क करें।",
+        status: "out_of_service",
+      });
+    }
+
+    // 🔍 check for active socket before rendering
+    if (redirectIfBusAlreadyLive(req, res, bus._id)) return;
+
+    bus.routeStops = bus.routeStops.sort(
+      (a, b) => parseInt(a.stopOrder) - parseInt(b.stopOrder)
+    );
+
+    // If bus is operational, return normal data
+    res.set("Cache-Control", "no-store");
+
+    const campuses = [
+      {
+        name: "Educole HeadCampus",
+        polygon: turf.polygon([
+          [
+            [78.4915699, 29.3338713],
+            [78.4920634, 29.3330669],
+            [78.4928305, 29.3334738],
+            [78.4922565, 29.3342548],
+            [78.4915699, 29.3338713],
+          ],
+        ]),
+      },
+    ];
+    return res.render("DC/goLive.ejs", { user: req.worker, bus, campuses });
+  }
+);
+
 router.get(
   "/yourComplaints",
   checkUserExistenceAndRedirect([
