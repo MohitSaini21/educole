@@ -579,37 +579,40 @@
  
 
   // Function to start camera
-  function startCamera(cameraId) {
+async function startCamera(cameraId) {
+  try {
+    // If scanning, stop and wait for cleanup
     if (html5QrCode.isScanning) {
-      html5QrCode.stop().then(() => start(cameraId));
-    } else {
-      start(cameraId);
+      await html5QrCode.stop();
+      console.log("Previous scan stopped safely.");
     }
 
-    function start(id) {
-      document.getElementById("reader").classList.add("active");
+    // Add active state and start camera
+    document.getElementById("reader").classList.add("active");
 
-      html5QrCode.start(
-        id,
-        { fps: 10, qrbox: 250 },
-        decodedText => {
-          window.location.href = `/DC/driverGoLive/${decodedText}`;
+    await html5QrCode.start(
+      cameraId,
+      { fps: 10, qrbox: 250 },
+      decodedText => {
+        window.location.href = `/DC/driverGoLive/${decodedText}`;
+      },
+      err => console.warn("Scanning...", err)
+    );
 
-          
-        },
-        err => {
-          console.warn("Scanning...", err);
-        }
-      ).catch(err => console.error("Unable to start scanning", err));
-    }
+    console.log("Camera started successfully!");
+  } catch (err) {
+    console.error("Unable to start scanning:", err);
   }
+}
+
 
   // Button events
    let isToggle = false;
   document.getElementById("rearBtn").addEventListener("click", () => {
-       if(isToggled){
-           isToggled= !isToggled;
-    }
+    //    if(isToggled){
+    //        isToggled= !isToggled;
+    // }
+    isToggled=false;
      isToggle= !isToggle;
 
         if (isToggle) {
@@ -633,9 +636,10 @@
    let isToggled = false;
 
   document.getElementById("frontBtn").addEventListener("click", () => {
-    if(isToggle){
-           isToggle= !isToggle;
-    }
+    // if(isToggle){
+    //        isToggle= !isToggle;
+    // }
+    isToggle=false;
 
      isToggled = !isToggled;
       if (isToggled) {
