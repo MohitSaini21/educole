@@ -45,7 +45,7 @@ import Bus from "./model/bus.js";
 // Load Environment Variables
 config();
 
-const PORT = process.env.PORT || 8000; // Default to 8000 if PORT is not defined in .env
+const PORT = process.env.PORT || 4000; // Default to 8000 if PORT is not defined in .env
 const dbUrl = process.env.DB_URL;
 
 // Initialize Express App

@@ -575,87 +575,77 @@
 
 <!-- 2. THEN run your code -->
 <script>
-  let html5QrCode = new Html5Qrcode("reader");
- 
+const html5QrCode = new Html5Qrcode("reader");
+let activeCamera = null;
+let isScanning = false;
 
-  // Function to start camera
-  function startCamera(cameraId) {
+// Ensures safe switching between cameras
+async function switchCamera(cameraId) {
+  const reader = document.getElementById("reader");
+
+  try {
+    // If already scanning, stop first
     if (html5QrCode.isScanning) {
-      html5QrCode.stop().then(() => start(cameraId));
-    } else {
-      start(cameraId);
+      isScanning = true;
+      await html5QrCode.stop();
+      reader.classList.remove("active");
     }
 
-    function start(id) {
-      document.getElementById("reader").classList.add("active");
+    // Now start the new camera cleanly
+    await html5QrCode.start(
+      cameraId,
+      { fps: 10, qrbox: 250 },
+      decodedText => {
+        window.location.href = `/DC/driverGoLive/${decodedText}`;
+      },
+      err => console.warn("Scanning...", err)
+    );
 
-      html5QrCode.start(
-        id,
-        { fps: 10, qrbox: 250 },
-        decodedText => {
-          window.location.href = `/DC/driverGoLive/${decodedText}`;
+    reader.classList.add("active");
+    isScanning = false;
+    activeCamera = cameraId;
 
-          
-        },
-        err => {
-          console.warn("Scanning...", err);
-        }
-      ).catch(err => console.error("Unable to start scanning", err));
-    }
+  } catch (err) {
+    console.error("Camera switch failed:", err);
+  }
+}
+
+// Button toggles
+let usingRear = false;
+let usingFront = false;
+
+document.getElementById("rearBtn").addEventListener("click", async () => {
+  if (usingRear) {
+    usingRear = false;
+    if (html5QrCode.isScanning) await html5QrCode.stop();
+    document.getElementById("reader").classList.remove("active");
+    return;
   }
 
-  // Button events
-   let isToggle = false;
-  document.getElementById("rearBtn").addEventListener("click", () => {
-       if(isToggled){
-           isToggled= !isToggled;
-    }
-     isToggle= !isToggle;
+  usingRear = true;
+  usingFront = false;
 
-        if (isToggle) {
-    Html5Qrcode.getCameras().then(cameras => {
-      // pick first back-facing camera
-      const rear = cameras.find(cam => /back|rear/i.test(cam.label)) || cameras[0];
-      startCamera(rear.id);
-    });
-    } else {
-      console.log("Button is now OFF");
-       if (html5QrCode.isScanning) {
-      html5QrCode.stop().then(() =>{ 
-        document.getElementById("reader").classList.remove("active");
+  const cameras = await Html5Qrcode.getCameras();
+  const rear = cameras.find(c => /back|rear/i.test(c.label)) || cameras[0];
+  await switchCamera(rear.id);
+});
 
-        console.log("Scanning has been stoped")});
-    } 
-      // Do OFF action
-    }
-  
-  });
-   let isToggled = false;
+document.getElementById("frontBtn").addEventListener("click", async () => {
+  if (usingFront) {
+    usingFront = false;
+    if (html5QrCode.isScanning) await html5QrCode.stop();
+    document.getElementById("reader").classList.remove("active");
+    return;
+  }
 
-  document.getElementById("frontBtn").addEventListener("click", () => {
-    if(isToggle){
-           isToggle= !isToggle;
-    }
+  usingFront = true;
+  usingRear = false;
 
-     isToggled = !isToggled;
-      if (isToggled) {
-     Html5Qrcode.getCameras().then(cameras => {
-      // pick first front-facing camera
-      const front = cameras.find(cam => /front|user/i.test(cam.label)) || cameras[0];
-      startCamera(front.id);
-    });
-    } else {
-      console.log("Button is now OFF");
-       if (html5QrCode.isScanning) {
-      html5QrCode.stop().then(() => {
-        document.getElementById("reader").classList.remove("active");
+  const cameras = await Html5Qrcode.getCameras();
+  const front = cameras.find(c => /front|user/i.test(c.label)) || cameras[0];
+  await switchCamera(front.id);
+});
 
-        console.log("Scanning has been stoped")});
-    } 
-      // Do OFF action
-    }
-  
-  });
 
   // File upload fallback
   const fileInput = document.getElementById("file-input");
