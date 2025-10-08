@@ -207,73 +207,87 @@
     padding: 10px 14px;
   }
 }
-/* Official QR Scanner Box */
+/* Container for the scanner */
 #reader {
   position: relative;
   width: 100%;
   max-width: 400px;
-  height: 300px;
   aspect-ratio: 1 / 1;
-  margin: 40px auto;
-  background-color: #f4f6f8;
-  border: 2px solid #d1d5db;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  margin: 0 auto;
+  border-radius: 20px;
   overflow: hidden;
-  transition: box-shadow 0.3s ease, border-color 0.3s ease;
+  display: none; /* hidden before camera starts */
+  background: rgba(0, 0, 0, 0.85);
 }
 
-/* Camera active border effect */
+/* When camera stream starts */
 #reader.active {
-  border-color: #007bff;
-  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.15);
+  display: block;
+  border: 2px solid #ffcc00; /* Bus yellow border */
+  box-shadow: 0 0 25px rgba(255, 204, 0, 0.4);
 }
 
-/* Gentle scanning line (very subtle and professional) */
-#reader::before {
-  content: "";
-  position: absolute;
-  top: -20%;
-  left: 0;
+/* Live camera feed */
+#reader video {
   width: 100%;
-  height: 10%;
-  background: linear-gradient(to bottom, rgba(0, 123, 255, 0.15), rgba(0, 123, 255, 0.05));
-  animation: scanline 3s linear infinite;
+  height: 100%;
+  object-fit: cover;
 }
 
-@keyframes scanline {
-  0% { top: -20%; }
-  100% { top: 100%; }
-}
-
-/* Subtle inner shadow for depth */
+/* Scanning animation line */
 #reader::after {
   content: "";
   position: absolute;
-  inset: 0;
-  box-shadow: inset 0 0 10px rgba(0,0,0,0.1);
-  pointer-events: none;
-  border-radius: inherit;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #ffcc00, transparent);
+  animation: scan-line 2s linear infinite;
+  opacity: 0.9;
 }
 
-/* Responsive design */
-@media (max-width: 500px) {
-  #reader {
-    max-width: 300px;
-    margin: 20px auto;
+/* Moving scan line animation */
+@keyframes scan-line {
+  0% {
+    top: 0%;
+  }
+  100% {
+    top: 100%;
   }
 }
 
-/* Smooth fade-in when showing scanner */
-.fade-in {
-  animation: fadeIn 0.6s ease-in-out;
+/* Dark overlay edges for focus */
+#reader::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    circle at center,
+    transparent 65%,
+    rgba(0, 0, 0, 0.85) 100%
+  );
+  pointer-events: none;
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; transform: scale(0.98); }
-  to { opacity: 1; transform: scale(1); }
+
+  
+
+/* Optional: smooth fade-in */
+#reader.active {
+  animation: fade-in 0.6s ease-in-out;
 }
 
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
 
     </style>
     
@@ -573,6 +587,8 @@
     }
 
     function start(id) {
+      document.getElementById("reader").classList.add("active");
+
       html5QrCode.start(
         id,
         { fps: 10, qrbox: 250 },
@@ -605,7 +621,10 @@
     } else {
       console.log("Button is now OFF");
        if (html5QrCode.isScanning) {
-      html5QrCode.stop().then(() => console.log("Scanning has been stoped"));
+      html5QrCode.stop().then(() =>{ 
+        document.getElementById("reader").classList.remove("active");
+
+        console.log("Scanning has been stoped")});
     } 
       // Do OFF action
     }
@@ -628,7 +647,10 @@
     } else {
       console.log("Button is now OFF");
        if (html5QrCode.isScanning) {
-      html5QrCode.stop().then(() => console.log("Scanning has been stoped"));
+      html5QrCode.stop().then(() => {
+        document.getElementById("reader").classList.remove("active");
+
+        console.log("Scanning has been stoped")});
     } 
       // Do OFF action
     }
@@ -642,6 +664,8 @@
     const imageFile = e.target.files[0];
      // Stop camera if running
   if (html5QrCode.isScanning) {
+    document.getElementById("reader").classList.remove("active");
+
     await html5QrCode.stop();
   }
   // ✅ Hide reader box before scanning image
@@ -664,6 +688,8 @@
     // Cleanup on page close (best-effort)
   window.addEventListener("beforeunload", () => {
  if (html5QrCode.isScanning) {
+  document.getElementById("reader").classList.remove("active");
+
       html5QrCode.stop().catch(()=>{});
     }
   });
