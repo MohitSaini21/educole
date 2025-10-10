@@ -5,7 +5,10 @@ import { config } from "dotenv"; // For environment variable management
 
 import FCM from "./model/FCM.js";
 import { dcRouter } from "./routes/DC.js";
+import { deleteFileIfExists } from "./utils/deleteFile.js";
 import CORE from "./model/admin.js";
+import client from "./redis-client.js";
+
 import { sendNotificationToClient } from "./utils/notify.js";
 import { Worker } from "worker_threads";
 import os from "os";
@@ -118,331 +121,19 @@ const io = new Server(server, {
 
 app.set("io", io); // <-- shared shelf mein rakh diy
 // Object to store busId -> array of socketIds
-let busConnections = {};
 
-let allAdmins = [];
-let administratorIds = [];
+// RAM
+
 const peers = {};
-let liveBuses = [];
-
-let adminConnectionsBus = {};
-let administratorConnectionsBus = {};
 
 let lastLocation = new Map();
-let busSocketsIds = {};
 
-let locationEvaluationCooldown = 10000; // ms (5 seconds)
+
+
 let lastEvaluated = {}; // { [busId]: timestamp }
 
-// Cron Jobs
-
-function deleteFileIfExists(relativePath, label = "") {
-  if (!relativePath) return;
-
-  const fullPath = path.join(process.cwd(), "public", relativePath);
-
-  if (fs.existsSync(fullPath)) {
-    try {
-      fs.unlinkSync(fullPath);
-      console.log(`🗑️ Deleted ${label}: ${relativePath}`);
-    } catch (err) {
-      console.error(`❗ Error deleting ${label}: ${relativePath}`, err);
-    }
-  }
-}
-
-cron.schedule(
-  "0 0 * * *", // Every day at 12:00 AM IST
-  async () => {
-    const nowIST = moment().tz("Asia/Kolkata");
-
-    const currentTime = nowIST.format("YYYY-MM-DD HH:mm:ss");
-    console.log(`⏰ Cron triggered at (IST): ${currentTime}`);
-
-    // 🔹 Clear in-memory object used for location checks
-    console.log("🕛 12:00 AM IST: Clearing lastEvaluated memory...");
-
-    for (const busId in lastEvaluated) {
-      await newsaveLogs(lastEvaluated[busId]);
-
-      delete lastEvaluated[busId];
-    }
-    console.log("🧹 Cleared all entries from lastEvaluated");
-
-    // 🔹 Delete old logs based on logDate (YYYY-MM-DD format)
-    const cutoffDate = nowIST.clone().subtract(10, "day").format("YYYY-MM-DD");
-    console.log(`🧾 Deleting logs with logDate before: ${cutoffDate}`);
-
-    try {
-      const oldLogs = await BusActivityLog.find({
-        logDate: { $lt: cutoffDate },
-      });
-
-      if (oldLogs.length === 0) {
-        console.log("📂 No old logs found to delete.");
-        return;
-      }
-
-      console.log(`📁 Found ${oldLogs.length} old logs to delete.`);
-
-      for (const log of oldLogs) {
-        if (log.morningSnap?.image) {
-          deleteFileIfExists(log.morningSnap.image, "Morning Snap");
-        }
-
-        if (log.eveningSnap?.image) {
-          deleteFileIfExists(log.eveningSnap.image, "Evening Snap");
-        }
-
-        await log.deleteOne();
-        console.log(`✅ Deleted log ID: ${log._id} (logDate: ${log.logDate})`);
-      }
-
-      console.log("🧹 Old logs cleanup complete.");
-    } catch (error) {
-      console.error("❌ Error during cleanup cron job:", error);
-    }
-  },
-  {
-    timezone: "Asia/Kolkata",
-  }
-);
-
-// cron.schedule(
-//   "* * * * *", // Runs every minute
-//   async () => {
-//     const nowIST = moment().tz("Asia/Kolkata");
-//     const currentTime = nowIST.format("YYYY-MM-DD HH:mm:ss");
-//     console.log(`⏰ Cleanup Cron Triggered at: ${currentTime}`);
-
-//     // Get cutoff date (24 hours ago = one full previous day)
-//     const cutoffDate = nowIST.clone().subtract(1, "day").format("YYYY-MM-DD");
-//     console.log(`🧾 Deleting logs with logDate before: ${cutoffDate}`);
-
-//     try {
-//       const oldLogs = await BusActivityLog.find({
-//         logDate: { $lt: cutoffDate }, // logDate is string, so direct comparison
-//       });
-
-//       if (oldLogs.length === 0) {
-//         console.log("📂 No old logs found to delete.");
-//         return;
-//       }
-
-//       console.log(`📁 Found ${oldLogs.length} old logs to delete.`);
-
-//       for (const log of oldLogs) {
-//         if (log.morningSnap?.image) {
-//           deleteFileIfExists(log.morningSnap.image, "Morning Snap");
-//         }
-
-//         if (log.eveningSnap?.image) {
-//           deleteFileIfExists(log.eveningSnap.image, "Evening Snap");
-//         }
-
-//         await log.deleteOne();
-//         console.log(`✅ Deleted log ID: ${log._id} (logDate: ${log.logDate})`);
-//       }
-
-//       console.log("🧹 Old logs cleanup complete.");
-//     } catch (error) {
-//       console.error("❌ Error during cleanup cron job:", error);
-//     }
-//   },
-//   {
-//     timezone: "Asia/Kolkata",
-//   }
-// );
-
-// Cron Jobs
-
-// cron Job for testing
-// Run every 1 minute in IST (good for testing)
-// cron.schedule(
-//   "*/1 * * * *",
-//   async () => {
-//     const currentTimeIST = moment()
-//       .tz("Asia/Kolkata")
-//       .format("YYYY-MM-DD HH:mm:ss");
-//     console.log(`🧪 Minute Cron Test @ ${currentTimeIST}`);
-//   },
-//   {
-//     timezone: "Asia/Kolkata",
-//   }
-// );
-
-//  NewArch Based Code
-
-const MAX_WORKERS = os.cpus().length - 2; // 8 in your case
-const waitingArea = new Set(); // 👈 No duplicates
-const workers = [];
-
-const availableWorkers = [];
-
-for (let i = 0; i < MAX_WORKERS; i++) {
-  const worker = new Worker("./workerTask.js");
-  workers.push(worker);
-  availableWorkers.push(worker);
-}
-// ---- TASK & QUEUE MAPS ----
-const taskQueues = new Map(); // Map<busId, Queue<Task>>
-const isProcessing = new Map(); // Map<busId, Boolean>
-
-// ---- Add task to bus queue ----
-// ---- Add task to bus queue ----
-function addTask(task) {
-  const busId = task.bus._id;
-
-  if (!taskQueues.has(busId)) {
-    taskQueues.set(busId, []);
-    isProcessing.set(busId, false);
-  }
-
-  const queue = taskQueues.get(busId);
-  queue.push(task);
-
-  console.log(`[QUEUE] Bus ${busId} → Queue length: ${queue.length}`);
-
-  if (!isProcessing.get(busId)) {
-    processQueue(busId);
-  }
-}
-const TASK_TIMEOUT = 10000; // from 4000ms
-
-// Ineterval to Provess Watitign Area
-// setInterval(() => {
-//   if (availableWorkers.length === 0) return;
-
-//   const busId = [...waitingArea][0];
-//   if (busId) {
-//     waitingArea.delete(busId);
-//     processQueue(busId);
-//   }
-// }, 500); // Every 500ms
-
-// // To improve Memeory
-// setInterval(() => {
-//   for (const [busId, queue] of taskQueues) {
-//     if (queue.length === 0 && !isProcessing.get(busId)) {
-//       taskQueues.delete(busId);
-//       isProcessing.delete(busId);
-//       waitingArea.delete(busId);
-//     }
-//   }
-// }, 10 * 60 * 1000); // Every 10 mins
-
-function processQueue(busId) {
-  if (isProcessing.get(busId)) return;
-
-  const queue = taskQueues.get(busId);
-  if (!queue || queue.length === 0) {
-    // When retrying:
-    let busId = [...waitingArea][0];
-    if (busId) {
-      waitingArea.delete(busId); // 👈 remove from set
-      processQueue(busId);
-    }
-
-    return;
-  }
-
-  if (availableWorkers.length === 0) {
-    waitingArea.add(busId); // 👈 No repeat entries
-    return;
-  }
-
-  const task = queue.shift();
-  const worker = availableWorkers.shift();
-
-  const start = Date.now();
-
-  let busObject = lastEvaluated[busId] ?? {};
-
-  isProcessing.set(busId, true);
-
-  let resolved = false;
-
-  const clearEverything = () => {
-    resolved = true;
-    clearTimeout(timeout);
-    worker.removeAllListeners();
-    isProcessing.set(busId, false);
-    availableWorkers.push(worker);
-    processQueue(busId);
-  };
-
-  const timeout = setTimeout(() => {
-    if (!resolved) {
-      console.warn(`⏰ Timeout: Task for bus ${busId} took too long.`);
-      try {
-        worker.removeAllListeners();
-        isProcessing.set(busId, false);
-        worker.terminate().then(() => {
-          // DON'T push it back, instead:
-          const newWorker = new Worker("./workerTask.js");
-          workers.push(newWorker);
-          availableWorkers.push(newWorker);
-          processQueue(busId);
-        });
-      } catch (e) {
-        console.error("Worker termination failed:", e);
-      }
-    }
-  }, TASK_TIMEOUT);
-  timeout.unref();
-
-  const safeTaskData = JSON.parse(JSON.stringify({ task, busObject }));
-  worker.postMessage(safeTaskData);
-
-  worker.once("message", (msg) => {
-    process.nextTick(() => {
-      if (resolved) return;
-
-      if (msg?.updatedBusObject && msg?.busId) {
-        lastEvaluated[msg.busId] = msg.updatedBusObject;
-
-        if (adminConnectionsBus[msg.busId]) {
-          adminConnectionsBus[msg.busId].forEach((socketId) => {
-            io.to(socketId).emit("busUpdate", {
-              busObject: lastEvaluated[msg.busId],
-            });
-          });
-        }
-
-        const timeTaken = Date.now() - start;
-        console.log(`✅ Worker completed in ${timeTaken}ms`);
-      } else {
-        console.warn("⚠️ Malformed worker message:", msg);
-      }
-
-      clearEverything();
-    });
-  });
-
-  if (!task._retries) task._retries = 0;
-
-  worker.once("error", (err) => {
-    if (resolved) return;
-    console.error("💥 Worker crashed:", err);
-    if (task._retries < 1) {
-      task._retries++;
-      taskQueues.get(busId)?.unshift(task); // Retry it
-    }
-
-    clearEverything();
-  });
-
-  worker.once("exit", (code) => {
-    if (resolved) return;
-    if (code !== 0) {
-      console.warn(`❌ Worker exited abnormally with code ${code}`);
-    }
-    clearEverything();
-  });
-}
-
-const pendingBusOverrides = {}; // store busId => socket.id
-
+let locationEvaluationCooldown = 10000; // ms (5 seconds)
+// Middleware
 io.use((socket, next) => {
   try {
     const query = socket.handshake.query;
@@ -494,6 +185,20 @@ function registerSocket(map, key, socket, label = "") {
   console.log(`📡 Current connections for ${key}:`, map[key]);
 }
 
+// goona rpalce exiting fucntion
+async function registerSocketOnRedis(distinctName, key, socket, label = "") {
+  const redisKey = `${distinctName}:${key}`;
+  await client.sAdd(redisKey, socket.id);
+
+  const allSockets = await client.sMembers(redisKey);
+  console.log(
+    `✅ New connection${label ? ` (${label})` : ""} for ${key} with socketId: ${
+      socket.id
+    }`
+  );
+  console.log(`📡 Current connections for ${redisKey}:`, allSockets);
+}
+
 // Helper to safely remove socket ID from all arrays
 function removeSocketFromMap(map, key, socketId, label = "") {
   if (!map[key]) return;
@@ -507,7 +212,22 @@ function removeSocketFromMap(map, key, socketId, label = "") {
   }
 }
 
-function logStopArrivalToMemory({ busId, stopId }) {
+// goona rpalce exiting fucntion
+async function removeSocketFromRedis(distinctName, key, socket, label) {
+  const redisKey = `${distinctName}:${key}`;
+  const removedCount = await client.sRem(redisKey, socket.id);
+
+  if (removedCount > 0) {
+    console.log(`❌ Removed socket ${socket.id} from ${label} for ${key}.`);
+  }
+}
+
+async function clearCategory(distinctName) {
+  const keys = await client.keys(`${distinctName}:*`);
+  if (keys.length) await client.del(keys);
+}
+
+async function logStopArrivalToMemory({ busId, stopId }) {
   console.log("🔍 logStopArrivalToMemory called with:", { busId, stopId });
 
   const cacheData = getBusCacheData(busId);
@@ -579,16 +299,17 @@ function logStopArrivalToMemory({ busId, stopId }) {
   console.log("✅ stopLog updated:", stopLog);
 
   // Notify admins watching this bus
-  if (adminConnectionsBus[busId]) {
-    console.log(
-      "📤 Emitting busUpdate to admin sockets:",
-      adminConnectionsBus[busId]
-    );
-    adminConnectionsBus[busId].forEach((socketId) => {
-      io.to(socketId).emit("busUpdate", {
-        busObject: lastEvaluated[busId],
-      });
-    });
+  // Notify admins watching this bus
+  const acbSockets = await client.sMembers(
+    `adminConnectionsBus:${busId.toString()}`
+  );
+
+  if (acbSockets.length > 0) {
+    console.log("📤 Emitting busUpdate to admin sockets:", acbSockets);
+
+    for (const socketId of acbSockets) {
+      io.to(socketId).emit("busUpdate", { busObject: busData });
+    }
   } else {
     console.log("ℹ️ No admin sockets connected for busId:", busId);
   }
@@ -596,7 +317,8 @@ function logStopArrivalToMemory({ busId, stopId }) {
 
 // Prevent any connection in first 5s after a disconnect for same busId
 const cooldowns = new Map();
-io.on("connection", (socket) => {
+
+io.on("connection", async (socket) => {
   const query = socket.handshake.query;
 
   // 🎯 Priority 1: Public Viewer (no auth)
@@ -604,22 +326,36 @@ io.on("connection", (socket) => {
     const busId = query.busId;
     socket.busId = busId;
 
-    registerSocket(busConnections, busId, socket, "Viewer");
+    // registerSocket(busConnections, busId, socket, "Viewer");
+    registerSocketOnRedis("busConnections", busId, socket, "Viewer");
 
     // 🎯 Priority 2: Admin for specific bus
   } else if (query.bus && socket.adminId) {
     const busId = query.bus;
     socket.bus = busId;
 
-    registerSocket(adminConnectionsBus, busId, socket, "Admin (per bus)");
+    // registerSocket(adminConnectionsBus, busId, socket, "Admin (per bus)")
+    registerSocketOnRedis(
+      "adminConnectionsBus",
+      busId,
+      socket,
+      "Admin (per bus)"
+    );
 
     // 🎯 Priority 3: Administrator for specific bus
   } else if (query.bus && socket.administratorId) {
     const busId = query.bus;
     socket.bus = busId;
 
-    registerSocket(
-      administratorConnectionsBus,
+    // registerSocket(
+    //   administratorConnectionsBus,
+    //   busId,
+    //   socket,
+    //   "Administrator (per bus)"
+    // );
+
+    registerSocketOnRedis(
+      "administratorConnectionsBus",
       busId,
       socket,
       "Administrator (per bus)"
@@ -627,14 +363,19 @@ io.on("connection", (socket) => {
 
     // 🎯 Priority 4: Global Administrator
   } else if (socket.administratorId) {
-    administratorIds.push(socket.id);
+    // administratorIds.push(socket.id);
+    await client.sAdd("administratorIds", socket.id);
+    let administratorIds = await client.sMembers("administratorIds");
     console.log(`✅ New global administrator connection: ${socket.id}`);
     console.log(`📋 Current administrator IDs:`, administratorIds);
 
     // 🎯 Priority 5: Global Admin
   } else if (socket.adminId) {
-    allAdmins.push(socket.id);
+    // allAdmins.push(socket.id);
+
+    await client.sAdd("allAdmins", socket.id);
     console.log(`✅ New global admin connection: ${socket.id}`);
+    let allAdmins = await client.sMembers("allAdmins");
     console.log(`📋 Current admin IDs:`, allAdmins);
 
     // 🎯 Priority 6: Live Bus (driver/conductor)
@@ -650,19 +391,27 @@ io.on("connection", (socket) => {
       return;
     }
 
-    if (liveBuses.includes(busId)) {
+    let exists = await client.sIsMember("liveBuses", busId);
+    if (exists) {
       console.log(`liveBuses mai abhi bhi busId hai ...........`);
       socket.disconnect(true);
       return;
     }
 
-    liveBuses.push(busId);
+    await client.sAdd("liveBuses", busId);
 
-    registerSocket(busSocketsIds, busId, socket, "New Driver Connections");
+    // registerSocket(busSocketsIds, busId, socket, "New Driver Connections");
+    registerSocketOnRedis(
+      "busSocketsIds",
+      busId,
+      socket,
+      "New Driver Connections"
+    );
 
     console.log(`🟢 Bus ${busId} is now live with socket ${socket.id}`);
 
     // Notify admins
+    let allAdmins = await client.sMembers("allAdmins");
     allAdmins.forEach((adminSocketId) => {
       io.to(adminSocketId).emit("add", busId);
     });
@@ -678,6 +427,7 @@ io.on("connection", (socket) => {
   // asking about is ther ebus obejt exist
   socket.on("liveBuses", async (callback) => {
     try {
+      let liveBuses = await client.sMembers("liveBuses"); // list all
       callback({ success: true, data: liveBuses });
     } catch (err) {
       console.error("Error fetching bus:", err);
@@ -697,24 +447,25 @@ io.on("connection", (socket) => {
   });
 
   // offer and icecandiate storegae
-  socket.on("driver-offer", ({ bus, offer }) => {
+  socket.on("driver-offer", async ({ bus, offer }) => {
     if (!peers[bus._id]) {
       console.log(
         "New connection !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! ne Connection !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
       );
+      let administratorIds = await client.sMembers("administratorIds");
       if (administratorIds.length) {
         for (let i = 0; i < administratorIds.length; i++) {
           io.to(administratorIds[i]).emit("newStream", bus._id);
         }
       }
+      const adcbSockets = await client.sMembers(
+        `administratorConnectionsBus:${bus._id.toString()}`
+      );
 
-      if (administratorConnectionsBus[bus._id]?.length) {
+      if (adcbSockets.length > 0) {
         // Iterate through each connected admin socket
-        for (let i = 0; i < administratorConnectionsBus[bus._id].length; i++) {
-          io.to(administratorConnectionsBus[bus._id][i]).emit(
-            "newStream",
-            bus._id
-          );
+        for (const socketId of adcbSockets) {
+          io.to(socketId).emit("newStream", bus._id);
         }
       }
     }
@@ -818,8 +569,9 @@ io.on("connection", (socket) => {
     }
   });
 
-  socket.on("lastLocation", (busId, callback) => {
-    if (!liveBuses.includes(busId)) {
+  socket.on("lastLocation", async (busId, callback) => {
+    let exists = await client.sIsMember("liveBuses", busId.toString());
+    if (!exists) {
       const location = lastLocation.has(busId) ? lastLocation.get(busId) : null;
       callback({
         status: "true",
@@ -828,7 +580,7 @@ io.on("connection", (socket) => {
     }
   });
 
-  socket.on("lastLocationOfAllBuses", (callback) => {
+  socket.on("lastLocationOfAllBuses", async (callback) => {
     try {
       if (!lastLocation || lastLocation.size === 0) {
         return callback(null); // ❌ No location data at all
@@ -838,7 +590,8 @@ io.on("connection", (socket) => {
 
       for (const [busId, data] of lastLocation.entries()) {
         // Check if bus is offline
-        if (!liveBuses.includes(busId)) {
+        let exists = await client.sIsMember("liveBuses", busId.toString());
+        if (!exists) {
           offlineLocations.push(data); // Add last known location
         }
       }
@@ -868,7 +621,7 @@ io.on("connection", (socket) => {
     }
   });
 
-  socket.on("busLocationUpdate", (data) => {
+  socket.on("busLocationUpdate", async (data) => {
     try {
       if (data == null) return; // catches null or undefined only
 
@@ -887,7 +640,10 @@ io.on("connection", (socket) => {
       };
 
       // 2. Broadcast to bus-connected clients
-      const sockets = busConnections[busId];
+      // let's wrie down the code regarding the redis.
+      const sockets = await client.sMembers(`busConnections:${busId}`);
+
+      // const sockets = busConnections[busId];
       if (sockets?.length) {
         for (let i = 0; i < sockets.length; i++) {
           io.to(sockets[i]).emit("receivelocation", clientBroadcastData);
@@ -895,7 +651,8 @@ io.on("connection", (socket) => {
       }
 
       // 3. Use lightweight cache fetch
-      const cacheData = getBusCacheData(busId);
+      const cacheData = await getBusCacheData(busId);
+
       const adminPayload = {
         ...clientBroadcastData,
         bus: {
@@ -907,7 +664,11 @@ io.on("connection", (socket) => {
       // 4. Update lastLocation (used by admins)
       lastLocation.set(busId, adminPayload);
 
+      //  awiait client.hSet("lastLocation",busId.toString(),JSON.stringify(adminPayload))
+
       // 5. Notify all admin and super admin sockets
+      let allAdmins = await client.sMembers("allAdmins");
+      let administratorIds = await client.sMembers("administratorIds");
       const adminTargets = [...allAdmins, ...administratorIds];
       for (let i = 0; i < adminTargets.length; i++) {
         io.to(adminTargets[i]).emit("allBusLocations", adminPayload);
@@ -945,13 +706,18 @@ io.on("connection", (socket) => {
     }
   });
 
-  socket.on("stopStreaming", ({ busId }) => {
+  socket.on("stopStreaming", async ({ busId }) => {
+    let administratorIds = await client.sMembers("administratorIds");
     administratorIds.forEach((id) => {
       io.to(id).emit("deleteStream", busId);
     });
 
-    if (administratorConnectionsBus[busId]) {
-      administratorConnectionsBus[busId].forEach((id) => {
+    const adcbSockets = await client.sMembers(
+      `administratorConnectionsBus:${busId.toString()}`
+    );
+
+    if (adcbSockets.length > 0) {
+      adcbSockets.forEach((id) => {
         io.to(id).emit("deleteStream", busId);
       });
     }
@@ -1061,9 +827,12 @@ io.on("connection", (socket) => {
         eventType: event,
         time: timeString,
       });
+      const acbSockets = await client.sMembers(
+        `adminConnectionsBus:${busId.toString()}`
+      );
 
-      if (adminConnectionsBus[busId]) {
-        adminConnectionsBus[busId].forEach((socketId) => {
+      if (acbSockets.length > 0) {
+        acbSockets.forEach((socketId) => {
           io.to(socketId).emit("busUpdate", {
             busObject: lastEvaluated[busId],
           });
@@ -1206,60 +975,79 @@ io.on("connection", (socket) => {
     // 🟠 Viewer (public viewer)
     if (socket.busId) {
       const busId = socket.busId;
-      removeSocketFromMap(busConnections, busId, socket.id, "Viewer");
+      removeSocketFromRedis(
+        "busConnections",
+        busId.toString(),
+        socket,
+        "Viewer"
+      );
     }
 
     // 🔵 Admin (per-bus)
     if (socket.bus && socket.adminId) {
       const busId = socket.bus;
-      removeSocketFromMap(adminConnectionsBus, busId, socket.id, "Admin (bus)");
+      // removeSocketFromMap(adminConnectionsBus, busId, socket.id, "Admin (bus)");
+      removeSocketFromRedis(
+        "adminConnectionsBus",
+        busId.toString(),
+        socket,
+        "Admin (bus)"
+      );
     }
 
     // 🟣 Administrator (per-bus)
     if (socket.bus && socket.administratorId) {
       const busId = socket.bus;
 
-      removeSocketFromMap(
-        administratorConnectionsBus,
-        busId,
-        socket.id,
+      removeSocketFromRedis(
+        "administratorConnectionsBus",
+        busId.toString(),
+        socket,
         "Administrator (bus)"
       );
     }
 
-    // 🔴 Admin (global)
-    if (socket.adminId && allAdmins.includes(socket.id)) {
-      allAdmins = allAdmins.filter((id) => id !== socket.id);
-      console.log(`❌ Removed global admin: ${socket.id}`);
+    if (socket.adminId) {
+      const removedCount = await client.sRem("allAdmins", socket.id);
+      if (removedCount) {
+        console.log(`❌ Removed global admin: ${socket.id}`);
+      }
     }
 
     // 🟢 Administrator (global)
-    if (socket.administratorId && administratorIds.includes(socket.id)) {
-      administratorIds = administratorIds.filter((id) => id !== socket.id);
-      console.log(`❌ Removed global administrator: ${socket.id}`);
+    if (socket.administratorId) {
+      const removedCount = await client.sRem("administratroIds", socket.id);
+
+      if (removedCount) {
+        console.log(`❌ Removed global administrator: ${socket.id}`);
+      }
     }
 
     // 🚌 Live Bus (driver/conductor)
     if (socket.liveBusId) {
       const busId = socket.liveBusId;
       cooldowns.set(busId, Date.now());
-      removeSocketFromMap(busSocketsIds, busId, socket.id, "Driver Connection");
+      removeSocketFromMap("busSocketsIds", busId.toString(), socket, "Driver Connection");
 
-      const index = liveBuses.indexOf(busId);
-      if (index !== -1) {
-        liveBuses.splice(index, 1);
+      let removeCount = await client.sRem("liveBuses", busId);
+      if (removeCount) {
         console.log(`🚫 Bus ${busId} went offline.`);
+        let allAdmins = await client.sMembers("allAdmins");
 
         allAdmins.forEach((id) => io.to(id).emit("remove", busId));
       }
 
       // Inform all administrators to delete stream
+      let administratorIds = await client.sMembers("administratorIds");
       administratorIds.forEach((id) => {
         io.to(id).emit("deleteStream", busId);
       });
+      const adcbSockets = await client.sMembers(
+        `administratorConnectionsBus:${busId.toString()}`
+      );
 
-      if (administratorConnectionsBus[busId]) {
-        administratorConnectionsBus[busId].forEach((id) => {
+      if (adcbSockets.length > 0) {
+        adcbSockets.forEach((id) => {
           io.to(id).emit("deleteStream", busId);
         });
       }
@@ -1315,3 +1103,61 @@ const startServer = async () => {
 };
 
 startServer();
+
+// let's put the cron job here
+cron.schedule(
+  "0 0 * * *", // Every day at 12:00 AM IST
+  async () => {
+    const nowIST = moment().tz("Asia/Kolkata");
+
+    const currentTime = nowIST.format("YYYY-MM-DD HH:mm:ss");
+    console.log(`⏰ Cron triggered at (IST): ${currentTime}`);
+
+    // 🔹 Clear in-memory object used for location checks
+    console.log("🕛 12:00 AM IST: Clearing lastEvaluated memory...");
+
+    for (const busId in lastEvaluated) {
+      await newsaveLogs(lastEvaluated[busId]);
+
+      delete lastEvaluated[busId];
+    }
+    console.log("🧹 Cleared all entries from lastEvaluated");
+
+    // 🔹 Delete old logs based on logDate (YYYY-MM-DD format)
+    const cutoffDate = nowIST.clone().subtract(10, "day").format("YYYY-MM-DD");
+    console.log(`🧾 Deleting logs with logDate before: ${cutoffDate}`);
+
+    try {
+      const oldLogs = await BusActivityLog.find({
+        logDate: { $lt: cutoffDate },
+      });
+
+      if (oldLogs.length === 0) {
+        console.log("📂 No old logs found to delete.");
+        return;
+      }
+
+      console.log(`📁 Found ${oldLogs.length} old logs to delete.`);
+
+      for (const log of oldLogs) {
+        if (log.morningSnap?.image) {
+          deleteFileIfExists(log.morningSnap.image, "Morning Snap");
+        }
+
+        if (log.eveningSnap?.image) {
+          deleteFileIfExists(log.eveningSnap.image, "Evening Snap");
+        }
+
+        await log.deleteOne();
+        console.log(`✅ Deleted log ID: ${log._id} (logDate: ${log.logDate})`);
+      }
+
+      console.log("🧹 Old logs cleanup complete.");
+    } catch (error) {
+      console.error("❌ Error during cleanup cron job:", error);
+    }
+  },
+  {
+    timezone: "Asia/Kolkata",
+  }
+);
