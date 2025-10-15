@@ -124,11 +124,7 @@ app.set("io", io); // <-- shared shelf mein rakh diy
 
 // RAM
 
-const peers = {};
-
-let lastLocation = new Map();
-
-
+// let lastLocation = new Map();
 
 let lastEvaluated = {}; // { [busId]: timestamp }
 
@@ -442,52 +438,108 @@ io.on("connection", async (socket) => {
   });
 
   // allStream
-  socket.on("allStream", (callback) => {
-    callback(Object.keys(peers));
+  socket.on("allStream", async (callback) => {
+    try {
+      // Get all keys that start with 'peers:'
+      const keys = await client.keys("peers:*");
+
+      // Extract busIds (remove 'peers:' prefix)
+      const busIds = keys
+        .filter((key) => !key.endsWith(":candidates")) // ignore candidate lists
+        .map((key) => key.replace("peers:", ""));
+
+      callback(busIds);
+    } catch (err) {
+      console.error("❌ Error fetching all streams:", err);
+      callback([]);
+    }
   });
 
   // offer and icecandiate storegae
+  // Redis Marked
   socket.on("driver-offer", async ({ bus, offer }) => {
-    if (!peers[bus._id]) {
-      console.log(
-        "New connection !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! ne Connection !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
-      );
-      let administratorIds = await client.sMembers("administratorIds");
-      if (administratorIds.length) {
-        for (let i = 0; i < administratorIds.length; i++) {
-          io.to(administratorIds[i]).emit("newStream", bus._id);
-        }
-      }
-      const adcbSockets = await client.sMembers(
-        `administratorConnectionsBus:${bus._id.toString()}`
-      );
+    try {
+      const key = `peers:${bus._id}`;
 
-      if (adcbSockets.length > 0) {
-        // Iterate through each connected admin socket
-        for (const socketId of adcbSockets) {
-          io.to(socketId).emit("newStream", bus._id);
+      // Check if the hash exists
+      const exists = await client.exists(key);
+
+      if (!exists) {
+        console.log("🌟 New connection detected for bus:", bus._id);
+
+        // Notify all administrators
+        const administratorIds = await client.sMembers("administratorIds");
+        if (administratorIds.length) {
+          for (const adminId of administratorIds) {
+            io.to(adminId).emit("newStream", bus._id);
+          }
+        }
+
+        // Notify connected admins for this specific bus
+        const adcbSockets = await client.sMembers(
+          `administratorConnectionsBus:${bus._id}`
+        );
+        if (adcbSockets.length > 0) {
+          for (const socketId of adcbSockets) {
+            io.to(socketId).emit("newStream", bus._id);
+          }
         }
       }
+
+      // Save offer and socketID in hash
+      await client.hSet(key, "offer", JSON.stringify(offer));
+      await client.hSet(key, "socketID", socket.id);
+
+      console.log("✅ Offer and socketID saved for bus:", bus._id);
+    } catch (err) {
+      console.error("❌ Error handling driver-offer:", err);
     }
-    if (!peers[bus._id]) peers[bus._id] = {};
-    peers[bus._id].offer = offer;
-    peers[bus._id].socketID = socket.id;
-    console.log("Offer saved for bus:", bus._id);
   });
-  socket.on("ice-candidate", ({ bus, candidate }) => {
-    if (!peers[bus._id]) peers[bus._id] = {};
-    if (!peers[bus._id].candidates) peers[bus._id].candidates = [];
-    peers[bus._id].candidates.push(candidate);
-    console.log("ICE candidate saved for bus:", bus._id);
+  //  Redis Marked
+
+  // Handle ICE candidates
+  socket.on("ice-candidate", async ({ bus, candidate }) => {
+    try {
+      const listKey = `peers:${bus._id}:candidates`;
+
+      // Append candidate to Redis List
+      await client.rPush(listKey, JSON.stringify(candidate));
+
+      console.log("✅ ICE candidate saved for bus:", bus._id);
+    } catch (err) {
+      console.error("❌ Error saving ICE candidate:", err);
+    }
   });
+
   // admin checking whether offer and candiate exsit or not
-  socket.on("admin-wants-to-connect", ({ busId }) => {
-    if (peers[busId]) {
-      socket.emit("bus-offer-and-candidates", {
-        offer: peers[busId].offer,
-        candidates: peers[busId].candidates || [],
-      });
-    } else {
+  socket.on("admin-wants-to-connect", async ({ busId }) => {
+    try {
+      const key = `peers:${busId}`;
+      const exists = await client.exists(key);
+
+      if (exists) {
+        const offer = JSON.parse(await client.hGet(key, "offer"));
+
+        // Retrieve all ICE candidates from the list
+        const candidatesList = await client.lRange(
+          `peers:${busId}:candidates`,
+          0,
+          -1
+        );
+        const candidates = candidatesList.map(JSON.parse); // convert strings back to objects
+
+        socket.emit("bus-offer-and-candidates", {
+          offer,
+          candidates: candidates || [],
+        });
+      } else {
+        socket.emit("bus-offer-and-candidates", {
+          offer: null,
+          candidates: [],
+        });
+      }
+    } catch (err) {
+      console.error("❌ Error fetching bus offer and candidates:", err);
       socket.emit("bus-offer-and-candidates", {
         offer: null,
         candidates: [],
@@ -498,12 +550,38 @@ io.on("connection", async (socket) => {
   // Admin REalted ice candiate and asnwer
 
   // Relay the admin's ICE candidate back to the driver
-  socket.on("admin-ice-candidate", ({ busId, candidate }) => {
-    if (peers[busId]) {
-      io.to(peers[busId].socketID).emit("ice-candidate", {
-        bus: { _id: busId },
-        candidate: candidate,
-      });
+  // socket.on("admin-ice-candidate", ({ busId, candidate }) => {
+  //   if (peers[busId]) {
+  //     io.to(peers[busId].socketID).emit("ice-candidate", {
+  //       bus: { _id: busId },
+  //       candidate: candidate,
+  //     });
+  //   }
+  // });
+  // Relay the admin's ICE candidate back to the driver
+  socket.on("admin-ice-candidate", async ({ busId, candidate }) => {
+    try {
+      const key = `peers:${busId}`;
+      const exists = await client.exists(key);
+
+      if (!exists) {
+        return;
+      }
+
+      // Get the driver's socketID from Redis
+      const driverSocketID = await client.hGet(key, "socketID");
+
+      if (driverSocketID) {
+        io.to(driverSocketID).emit("ice-candidate", {
+          bus: { _id: busId },
+          candidate: candidate,
+        });
+        console.log(`✅ Relayed ICE candidate to driver for bus: ${busId}`);
+      } else {
+        console.warn(`⚠️ No socketID found for driver of bus: ${busId}`);
+      }
+    } catch (err) {
+      console.error("❌ Error relaying admin ICE candidate:", err);
     }
   });
 
@@ -527,26 +605,66 @@ io.on("connection", async (socket) => {
   // });
 
   // Handle admin's answer to the offer from the driver
-  socket.on("admin-answer", ({ busId, answer }) => {
-    if (peers[busId]) {
-      // Send the answer to the bus (driver)
-      io.to(peers[busId].socketID).emit("admin-answer", {
+  socket.on("admin-answer", async ({ busId, answer }) => {
+    try {
+      const key = `peers:${busId}`;
+      const exists = await client.exists(key);
+
+      if (!exists) {
+        return;
+      }
+
+      // Get the driver's socketID from Redis
+      const driverSocketID = await client.hGet(key, "socketID");
+
+      if (!driverSocketID) {
+        console.warn(`⚠️ No socketID found for driver of bus: ${busId}`);
+        return;
+      }
+
+      // Send the answer to the driver
+      io.to(driverSocketID).emit("admin-answer", {
         bus: { _id: busId },
         offer: answer,
       });
+
+      console.log(`✅ Admin answer sent to driver for bus: ${busId}`);
+    } catch (err) {
+      console.error("❌ Error handling admin-answer:", err);
     }
   });
 
-  socket.on("admin-disconnected", ({ busId }) => {
-    if (peers[busId]) {
-      io.to(peers[busId].socketID).emit("refresh", {
+  socket.on("admin-disconnected", async ({ busId }) => {
+    try {
+      const key = `peers:${busId}`;
+      const exists = await client.exists(key);
+
+      if (!exists) {
+        return;
+      }
+
+      // Get the driver's socketID from Redis
+      const driverSocketID = await client.hGet(key, "socketID");
+
+      if (!driverSocketID) {
+        console.warn(`⚠️ No socketID found for driver of bus: ${busId}`);
+        return;
+      }
+
+      // Notify the driver to refresh
+      io.to(driverSocketID).emit("refresh", {
         bus: { _id: busId },
       });
 
-      // Clean up the peer entry
-      peers[busId].offer = null;
-      peers[busId].candidates = [];
-      console.log(`Cleaned up peers[${busId}] after admin disconnect.`);
+      // Clean up Redis entries for this bus
+      await client.hSet(key, "offer", null); // clear offer
+      await client.del(`peers:${busId}:candidates`); // remove ICE candidates list
+
+      console.log(
+        `✅ Cleaned up Redis entries for bus: ${busId} after admin disconnect.`
+      );
+    } catch (err) {
+      console.error("❌ Error during admin-disconnected:", err);
     }
   });
 
@@ -572,27 +690,32 @@ io.on("connection", async (socket) => {
   socket.on("lastLocation", async (busId, callback) => {
     let exists = await client.sIsMember("liveBuses", busId.toString());
     if (!exists) {
-      const location = lastLocation.has(busId) ? lastLocation.get(busId) : null;
-      callback({
-        status: "true",
-        data: location,
-      });
+      // const location = lastLocation.has(busId) ? lastLocation.get(busId) : null;
+      let location = await client.hExists("lastLocation", busId);
+      if (location) {
+        location = await client.hGet("lastLocation", busId);
+        callback({
+          status: "true",
+          data: JSON.parse(location),
+        });
+      }
     }
   });
 
   socket.on("lastLocationOfAllBuses", async (callback) => {
     try {
-      if (!lastLocation || lastLocation.size === 0) {
+      const exists = await client.exists("lastLocation");
+      if (!exists) {
         return callback(null); // ❌ No location data at all
       }
 
       const offlineLocations = [];
+      let lastLocationObject = await client.hGetAll("lastLocation");
 
-      for (const [busId, data] of lastLocation.entries()) {
-        // Check if bus is offline
-        let exists = await client.sIsMember("liveBuses", busId.toString());
-        if (!exists) {
-          offlineLocations.push(data); // Add last known location
+      for (const [busId, data] of Object.entries(lastLocationObject)) {
+        const isLive = await client.sIsMember("liveBuses", busId);
+        if (!isLive) {
+          offlineLocations.push(JSON.parse(data));
         }
       }
 
@@ -662,9 +785,13 @@ io.on("connection", async (socket) => {
       };
 
       // 4. Update lastLocation (used by admins)
-      lastLocation.set(busId, adminPayload);
+      // lastLocation.set(busId, adminPayload);
 
-      //  awiait client.hSet("lastLocation",busId.toString(),JSON.stringify(adminPayload))
+      await client.hSet(
+        "lastLocation",
+        busId.toString(),
+        JSON.stringify(adminPayload)
+      );
 
       // 5. Notify all admin and super admin sockets
       let allAdmins = await client.sMembers("allAdmins");
@@ -722,9 +849,20 @@ io.on("connection", async (socket) => {
       });
     }
 
-    if (peers[busId]) {
-      delete peers[busId];
-      console.log(`🧹 Cleaned peers for ${busId}`);
+    // Clean up peer-related data
+    try {
+      const key = `peers:${busId}`;
+      const candidatesKey = `peers:${busId}:candidates`;
+
+      // Delete the candidates list first
+      const delCandidates = await client.del(candidatesKey);
+      console.log(`Deleted candidates list: ${delCandidates} key(s)`);
+
+      // Delete the hash next
+      const delHash = await client.del(key);
+      console.log(`Deleted hash: ${delHash} key(s)`);
+    } catch (err) {
+      console.error(`❌ Error cleaning Redis entries for bus ${busId}:`, err);
     }
 
     console.log(`📡 stopStreaming received for bus: ${busId}`);
@@ -1016,7 +1154,7 @@ io.on("connection", async (socket) => {
 
     // 🟢 Administrator (global)
     if (socket.administratorId) {
-      const removedCount = await client.sRem("administratroIds", socket.id);
+      const removedCount = await client.sRem("administratorIds", socket.id);
 
       if (removedCount) {
         console.log(`❌ Removed global administrator: ${socket.id}`);
@@ -1027,7 +1165,12 @@ io.on("connection", async (socket) => {
     if (socket.liveBusId) {
       const busId = socket.liveBusId;
       cooldowns.set(busId, Date.now());
-      removeSocketFromMap("busSocketsIds", busId.toString(), socket, "Driver Connection");
+      removeSocketFromMap(
+        "busSocketsIds",
+        busId.toString(),
+        socket,
+        "Driver Connection"
+      );
 
       let removeCount = await client.sRem("liveBuses", busId);
       if (removeCount) {
@@ -1053,9 +1196,19 @@ io.on("connection", async (socket) => {
       }
 
       // Clean up peer-related data
-      if (peers[busId]) {
-        delete peers[busId];
-        console.log(`🧹 Cleaned peers for ${busId}`);
+      try {
+        const key = `peers:${busId}`;
+        const candidatesKey = `peers:${busId}:candidates`;
+
+        // Delete the candidates list first
+        const delCandidates = await client.del(candidatesKey);
+        console.log(`Deleted candidates list: ${delCandidates} key(s)`);
+
+        // Delete the hash next
+        const delHash = await client.del(key);
+        console.log(`Deleted hash: ${delHash} key(s)`);
+      } catch (err) {
+        console.error(`❌ Error cleaning Redis entries for bus ${busId}:`, err);
       }
 
       // if (lastEvaluated[busId]) {
@@ -1067,9 +1220,7 @@ io.on("connection", async (socket) => {
 
 const startServer = async () => {
   try {
-    await ConnectDB(
-      "mongodb+srv://educole:educole1234@educole.2cvrvth.mongodb.net/educoleDB?retryWrites=true&w=majority&appName=Educole"
-    );
+    await ConnectDB("mongodb://localhost:27017/educoleDB");
     const existingAdministrator = await CORE.findOne({ role: "administrator" });
     if (!existingAdministrator) {
       await CORE.create({
