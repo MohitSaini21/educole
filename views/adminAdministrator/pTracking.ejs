@@ -295,7 +295,8 @@ setInterval(() => {
     console.error("❌ tbody not found inside #stops-covered");
     return;
   }
-
+   // Clear old rows
+    tbody.innerHTML = "";
   console.log("✅ Received reachedStops:", reachedStops);
 
   Object.entries(reachedStops).forEach(([stopId, info], index) => {
@@ -347,21 +348,21 @@ setInterval(() => {
   });
 }
 
-      socket.emit("getObject", { busId: bus._id }, function (response) {
+  //     socket.emit("getObject", { busId: bus._id }, function (response) {
 
-        console.log(response)
-        if (response.data && Object.keys(response.data.reachedStops || {}).length > 0) {
-          const tbody = document.querySelector("#stops-covered tbody");
-          tbody.innerHTML=""
-          updateStopsCoveredTable(response.data.reachedStops);
-        }
-        if(response.data?.eventTimeline?.length>0){
+  //       console.log(response)
+  //       if (response.data && Object.keys(response.data.reachedStops || {}).length > 0) {
+  //         const tbody = document.querySelector("#stops-covered tbody");
+  //         tbody.innerHTML=""
+  //         updateStopsCoveredTable(response.data.reachedStops);
+  //       }
+  //       if(response.data?.eventTimeline?.length>0){
 
-          document.getElementById("event-timeline-body").innerHTML="";
-  updateEventTimelineTable(response.data.eventTimeline);
-      }
+  //         document.getElementById("event-timeline-body").innerHTML="";
+  // updateEventTimelineTable(response.data.eventTimeline);
+  //     }
 
-      });
+  //     });
 
       let isFirst=true
 
@@ -400,7 +401,42 @@ if(data.busObject.eventTimeline?.length>0){
 
 
 
+socket.on("reachedStops",(data)=>{
+console.log(data);
+if(!data || !data.reachedStops){
+  console.log("No reachedStops in data paylaod ")
+  return
+}
+     if (Object.keys(data.reachedStops || {}).length > 0) {
+updateStopsCoveredTable(data.reachedStops);}
+})
+
+socket.emit("getReachedStops",{busId:bus._id},(data)=>{
+  console.log(data)
+
+  
+if(!data || !data.reachedStops){
+  console.log("No reachedStops in data paylaod ")
+  return
+}
+    if (Object.keys(data.reachedStops || {}).length > 0) {
+updateStopsCoveredTable(data.reachedStops);}
+})
       
+socket.on("eventTimeline",(data)=>{
+  if(data.eventTimeline?.length>0){
+  updateEventTimelineTable(data.eventTimeline)
+
+  
+
+}
+})
+socket.emit("getEventTimeLine", { busId: bus._id }, (eventTimeline) => {
+  if (eventTimeline) {
+    updateEventTimelineTable(eventTimeline);
+  }
+});
+
 
 
       function updateEventTimelineTable(events) {

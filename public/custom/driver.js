@@ -826,7 +826,12 @@ function notifyStatus(stopId, status, lat, lon) {
   updateButtonStatus(btn, "sending", "नोटिफिकेशन भेजी जा रही है...");
 
   // Directly emit for "arrived"/"departed" without location check
-  if (status === "arrived" || status === "departed" || status === "departing") {
+  if (
+    status === "arrived" ||
+    status === "departed" ||
+    status === "departing" ||
+    status === "arriving"
+  ) {
     emitNotification(stopId, status, undefined, btn);
     return;
   }

@@ -2,20 +2,19 @@
 import express from "express";
 
 import { config } from "dotenv"; // For environment variable management
+import { logStopArrivalToMemory } from "./utils/logsMemory.js";
 
 import FCM from "./model/FCM.js";
 import { dcRouter } from "./routes/DC.js";
-import { deleteFileIfExists } from "./utils/deleteFile.js";
+import { getAllStopsForBus } from "./utils/reachedStops.js";
+
 import CORE from "./model/admin.js";
 import client from "./redis-client.js";
 
 import { sendNotificationToClient } from "./utils/notify.js";
-import { Worker } from "worker_threads";
-import os from "os";
+
 import { setAllRouteStops } from "./utils/busRouteStops.js";
 import { getBusCacheData } from "./utils/busRouteStops.js";
-import BusActivityLog from "./model/busTrack.js";
-import newsaveLogs from "./utils/newSaveLogs.js";
 
 import jwt from "jsonwebtoken";
 
@@ -23,18 +22,10 @@ import { administratorRouter } from "./routes/administrator.js";
 import { adminRouter } from "./routes/admin.js";
 import { publicRouter } from "./routes/public.js";
 
-import cron from "node-cron"; // or const cron = require('node-cron');
-
-import saveLogs from "./utils/saveLogs.js";
-
 import { checkAuth } from "./middlware/rootCheckAuth.js";
 import cookie from "cookie"; // 🔥 NOT 'cookie-parser'
 
-import ejs from "ejs";
-
 import http from "http";
-import fs from "fs";
-import path from "path";
 
 import moment from "moment-timezone";
 
@@ -120,16 +111,7 @@ const io = new Server(server, {
 });
 
 app.set("io", io); // <-- shared shelf mein rakh diy
-// Object to store busId -> array of socketIds
 
-// RAM
-
-// let lastLocation = new Map();
-
-let lastEvaluated = {}; // { [busId]: timestamp }
-
-let locationEvaluationCooldown = 10000; // ms (5 seconds)
-// Middleware
 io.use((socket, next) => {
   try {
     const query = socket.handshake.query;
@@ -168,20 +150,6 @@ io.use((socket, next) => {
   }
 });
 
-// Helper to safely register a socket connection under a mapping
-function registerSocket(map, key, socket, label = "") {
-  map[key] = map[key] || [];
-  map[key].push(socket.id);
-
-  console.log(
-    `✅ New connection${label ? ` (${label})` : ""} for ${key} with socketId: ${
-      socket.id
-    }`
-  );
-  console.log(`📡 Current connections for ${key}:`, map[key]);
-}
-
-// goona rpalce exiting fucntion
 async function registerSocketOnRedis(distinctName, key, socket, label = "") {
   const redisKey = `${distinctName}:${key}`;
   await client.sAdd(redisKey, socket.id);
@@ -195,119 +163,12 @@ async function registerSocketOnRedis(distinctName, key, socket, label = "") {
   console.log(`📡 Current connections for ${redisKey}:`, allSockets);
 }
 
-// Helper to safely remove socket ID from all arrays
-function removeSocketFromMap(map, key, socketId, label = "") {
-  if (!map[key]) return;
-
-  map[key] = map[key].filter((id) => id !== socketId);
-  console.log(`❌ Removed socket ${socketId} from ${label} for ${key}.`);
-
-  if (map[key].length === 0) {
-    delete map[key];
-    console.log(`🗑️ Deleted empty ${label} array for ${key}.`);
-  }
-}
-
-// goona rpalce exiting fucntion
 async function removeSocketFromRedis(distinctName, key, socket, label) {
   const redisKey = `${distinctName}:${key}`;
   const removedCount = await client.sRem(redisKey, socket.id);
 
   if (removedCount > 0) {
     console.log(`❌ Removed socket ${socket.id} from ${label} for ${key}.`);
-  }
-}
-
-async function clearCategory(distinctName) {
-  const keys = await client.keys(`${distinctName}:*`);
-  if (keys.length) await client.del(keys);
-}
-
-async function logStopArrivalToMemory({ busId, stopId }) {
-  console.log("🔍 logStopArrivalToMemory called with:", { busId, stopId });
-
-  const cacheData = getBusCacheData(busId);
-  console.log("🧠 Fetched cacheData:", cacheData);
-
-  if (!cacheData || !Array.isArray(cacheData.routeStops)) {
-    console.warn("⚠️ No routeStops found in cacheData");
-    return;
-  }
-
-  console.log(
-    "🛣️ routeStops:",
-    cacheData.routeStops.map((s) => s?._id?.toString())
-  );
-
-  const stop = cacheData.routeStops.find((item) => {
-    if (!item || !item._id) return false;
-    const match = item._id.toString() === stopId.toString();
-    console.log(
-      `🔎 Checking stop: ${item._id?.toString()} === ${stopId.toString()} ➜ ${match}`
-    );
-    return match;
-  });
-
-  if (!stop) {
-    console.warn("❌ Stop not found in routeStops for busId:", busId);
-    return;
-  }
-
-  console.log("✅ Matched stop:", stop);
-
-  const currentTime = moment().tz("Asia/Kolkata");
-  const isMorning = currentTime.hour() < 12;
-  const readableTime = currentTime.format("hh:mm A");
-
-  if (!lastEvaluated[busId]) {
-    console.warn("🚫 lastEvaluated[busId] not initialized");
-    return;
-  }
-
-  if (!lastEvaluated[busId].reachedStops) {
-    console.log("📌 Initializing reachedStops");
-    lastEvaluated[busId].reachedStops = {};
-  }
-
-  if (!lastEvaluated[busId].reachedStops[stopId]) {
-    console.log("📌 Creating stopId log entry");
-    lastEvaluated[busId].reachedStops[stopId] = {};
-  }
-
-  const stopLog = lastEvaluated[busId].reachedStops[stopId];
-  console.log("🧾 Existing stopLog:", stopLog);
-
-  const alreadyLogged = isMorning ? stopLog.morningTime : stopLog.eveningTime;
-  if (alreadyLogged) {
-    console.log("⏩ Already logged this stop for this time of day. Skipping.");
-    return;
-  }
-
-  stopLog.stopName = stop.stopName;
-  if (isMorning) {
-    stopLog.eMorningTime = stop.morningTime + " AM";
-    stopLog.morningTime = readableTime;
-  } else {
-    stopLog.eEveningTime = stop.eveningTime + " PM";
-    stopLog.eveningTime = readableTime;
-  }
-
-  console.log("✅ stopLog updated:", stopLog);
-
-  // Notify admins watching this bus
-  // Notify admins watching this bus
-  const acbSockets = await client.sMembers(
-    `adminConnectionsBus:${busId.toString()}`
-  );
-
-  if (acbSockets.length > 0) {
-    console.log("📤 Emitting busUpdate to admin sockets:", acbSockets);
-
-    for (const socketId of acbSockets) {
-      io.to(socketId).emit("busUpdate", { busObject: busData });
-    }
-  } else {
-    console.log("ℹ️ No admin sockets connected for busId:", busId);
   }
 }
 
@@ -549,16 +410,6 @@ io.on("connection", async (socket) => {
 
   // Admin REalted ice candiate and asnwer
 
-  // Relay the admin's ICE candidate back to the driver
-  // socket.on("admin-ice-candidate", ({ busId, candidate }) => {
-  //   if (peers[busId]) {
-  //     io.to(peers[busId].socketID).emit("ice-candidate", {
-  //       bus: { _id: busId },
-  //       candidate: candidate,
-  //     });
-  //   }
-  // });
-  // Relay the admin's ICE candidate back to the driver
   socket.on("admin-ice-candidate", async ({ busId, candidate }) => {
     try {
       const key = `peers:${busId}`;
@@ -584,25 +435,6 @@ io.on("connection", async (socket) => {
       console.error("❌ Error relaying admin ICE candidate:", err);
     }
   });
-
-  //  admin initiating the web-cam
-  // socket.on("InitiateWebCam", (data, callback) => {
-  //   const { busId } = data;
-  //   if (liveBuses.includes(busId)) {
-  //     io.to(busSocketsIds[busId]).emit("initiateWebCam", {
-  //       bus: { _id: busId },
-  //     });
-  //     callback({
-  //       success: true,
-  //       msg: "Hold on 5s",
-  //     });
-  //   } else {
-  //     callback({
-  //       success: false,
-  //       msg: "No Signal",
-  //     });
-  //   }
-  // });
 
   // Handle admin's answer to the offer from the driver
   socket.on("admin-answer", async ({ busId, answer }) => {
@@ -732,15 +564,23 @@ io.on("connection", async (socket) => {
 
   // updating the distance
 
-  socket.on("distanceAdding", ({ busId, distanceCovered }) => {
-    distanceCovered = distanceCovered / 1000;
-    if (distanceCovered > 0) {
-      let busEval = lastEvaluated[busId];
-      if (!busEval) {
-        return;
-      }
+  socket.on("distanceAdding", async ({ busId, distanceCovered }) => {
+    try {
+      if (!busId) return; // avoid invalid keys
 
-      lastEvaluated[busId].distanceCovered += distanceCovered;
+      // convert meters → kilometers
+      const km = distanceCovered / 1000;
+
+      if (km > 0) {
+        const key = `lastEvaluated:${busId}:distanceCovered`;
+
+        // Increment (creates key automatically if missing)
+        const newValue = await client.incrByFloat(key, km);
+
+        console.log(`🚍 Bus ${busId} distance updated: total = ${newValue} km`);
+      }
+    } catch (err) {
+      console.error("❌ Error updating distanceCovered:", err);
     }
   });
 
@@ -764,6 +604,7 @@ io.on("connection", async (socket) => {
 
       // 2. Broadcast to bus-connected clients
       // let's wrie down the code regarding the redis.
+
       const sockets = await client.sMembers(`busConnections:${busId}`);
 
       // const sockets = busConnections[busId];
@@ -803,28 +644,26 @@ io.on("connection", async (socket) => {
 
       // 6. Initialize bus evaluation cache if not present
       const now = Date.now();
-      let busEval = lastEvaluated[busId];
-      if (!busEval) {
-        busEval = lastEvaluated[busId] = {
-          busId,
-          reachedStops: {},
-          lastEvaluations: now,
-          eventTimeline: [],
-          path: [],
-          distanceCovered: 0,
-        };
-      }
+
+      await client.set(`lastEvaluated:${busId}:lastEvaluations`, now, {
+        NX: true,
+      });
 
       // 7. Cooldown check — only update every 10s
-      const cooldownPassed = now - busEval.lastEvaluations >= 5 * 60 * 1000;
+      let value = await client.get(`lastEvaluated:${busId}:lastEvaluations`);
+      const lastEval = Number(value) || 0;
+      const cooldownPassed = now - lastEval >= 1000;
       if (cooldownPassed) {
-        // Push path update
-        busEval.path.push({
+        let locationObject = {
           lat: data.latitude,
           lon: data.longitude,
-        });
+        };
+        await client.rPush(
+          `lastEvaluated:${busId}:path`,
+          JSON.stringify(locationObject)
+        );
 
-        busEval.lastEvaluations = now;
+        await client.set(`lastEvaluated:${busId}:lastEvaluations`, now);
 
         console.log("✅ Path updated after cooldown");
       }
@@ -894,7 +733,7 @@ io.on("connection", async (socket) => {
           console.log(
             "🟢 Status is 'arrived' — calling logStopArrivalToMemory"
           );
-          logStopArrivalToMemory({ busId, stopId });
+          logStopArrivalToMemory({ busId, stopId, io });
         } else {
           console.log("ℹ️ Not an 'arrived' status — skipping memory log");
         }
@@ -949,7 +788,7 @@ io.on("connection", async (socket) => {
         return callback(false); // 🔴 Invalid request
       }
 
-      // 1. Fetch active tokens for this busId
+      // 1️⃣ Fetch active tokens for this busId
       const activeTokens = await FCM.find({
         busId,
         isActive: true,
@@ -957,23 +796,26 @@ io.on("connection", async (socket) => {
         .select("fcmToken stop stopName busId")
         .populate("busId", "busNumber");
 
-      // ✅ 4. Update in-memory eventTimeline
+      // 2️⃣ Prepare event object
       const timeString = moment().tz("Asia/Kolkata").format("hh:mm A");
+      const eventObject = { campus, eventType: event, time: timeString };
 
-      lastEvaluated[busId]?.eventTimeline?.push({
-        campus,
-        eventType: event,
-        time: timeString,
-      });
+      // 3️⃣ Push to Redis list (acts as timeline)
+      const key = `lastEvaluated:${busId}:eventTimeline`;
+      await client.rPush(key, JSON.stringify(eventObject));
+
+      // 4️⃣ Notify connected admins
       const acbSockets = await client.sMembers(
         `adminConnectionsBus:${busId.toString()}`
       );
 
       if (acbSockets.length > 0) {
+        let eventTimeline = await client.lRange(key, 0, -1);
+        // ✅ FIX: map() must be on eventTimeline, not eventObject
+        eventTimeline = eventTimeline.map((item) => JSON.parse(item));
+
         acbSockets.forEach((socketId) => {
-          io.to(socketId).emit("busUpdate", {
-            busObject: lastEvaluated[busId],
-          });
+          io.to(socketId).emit("eventTimeline", { eventTimeline });
         });
       }
 
@@ -981,31 +823,76 @@ io.on("connection", async (socket) => {
         `📌 Event logged: ${event} ${campus} @ ${timeString} for bus ${busId}`
       );
 
-      if (!activeTokens.length) {
-        return callback(true); // ✅ No tokens to notify, but not an error
+      // 5️⃣ Send FCM notification
+      if (activeTokens.length > 0) {
+        const title = "Campus Update";
+        const busNumber = activeTokens[0]?.busId?.busNumber || "Bus";
+
+        const statusMessages = {
+          Entered: `🚌 ${busNumber} has entered ${campus}`,
+          Exited: `🚌 ${busNumber} has exited ${campus}`,
+        };
+
+        const message =
+          statusMessages[event] || `Bus status update for ${campus}`;
+
+        for (const entry of activeTokens) {
+          await sendNotificationToClient(entry.fcmToken, title, message);
+        }
       }
 
-      // 2. Build message
-      const title = "Campus Update";
-      const busNumber = activeTokens[0]?.busId?.busNumber || "Bus";
-
-      const statusMessages = {
-        Entered: `🚌 ${busNumber} has entered ${campus}`,
-        Exited: `🚌 ${busNumber} has exited ${campus}`,
-      };
-
-      const message =
-        statusMessages[event] || `Bus status update for ${campus}`;
-
-      // 3. Send push notification
-      for (const entry of activeTokens) {
-        await sendNotificationToClient(entry.fcmToken, title, message);
-      }
-
-      callback(true); // ✅ Completed successfully
+      callback(true); // ✅ Success
     } catch (err) {
       console.error("🚨 Error in campusEvent handler:", err);
       callback(false);
+    }
+  });
+
+  socket.on("getEventTimeLine", async (data, callback) => {
+    const { busId } = data;
+
+    if (!busId) {
+      console.log("In order to receive eventTimeLine, busId is required");
+      return callback(0);
+    }
+
+    try {
+      // Make sure 'key' is defined based on busId (otherwise lRange won't work)
+      const key = `lastEvaluated:${busId}:eventTimeline`;
+
+      // Fetch the list from Redis
+      let eventTimeline = await client.lRange(key, 0, -1);
+
+      // Parse each item (assumes items are JSON strings)
+      eventTimeline = eventTimeline.map((item) => JSON.parse(item));
+
+      if (eventTimeline.length > 0) {
+        callback(eventTimeline);
+      } else {
+        callback(0); // No timeline found
+      }
+    } catch (err) {
+      console.error("Error fetching event timeline:", err);
+      callback(0);
+    }
+  });
+
+  socket.on("getReachedStops", async (data, callback) => {
+    try {
+      const { busId } = data || {};
+
+      if (!busId) {
+        console.error("[getReachedStops] Missing busId in payload");
+        return callback(0);
+      }
+
+      const reachedStops = await getAllStopsForBus(busId);
+      console.log(reachedStops);
+
+      callback({ reachedStops });
+    } catch (error) {
+      console.error(`[getReachedStops] Error: ${error.message}`);
+      callback(0);
     }
   });
 
@@ -1165,7 +1052,7 @@ io.on("connection", async (socket) => {
     if (socket.liveBusId) {
       const busId = socket.liveBusId;
       cooldowns.set(busId, Date.now());
-      removeSocketFromMap(
+      removeSocketFromRedis(
         "busSocketsIds",
         busId.toString(),
         socket,
@@ -1210,10 +1097,6 @@ io.on("connection", async (socket) => {
       } catch (err) {
         console.error(`❌ Error cleaning Redis entries for bus ${busId}:`, err);
       }
-
-      // if (lastEvaluated[busId]) {
-      //   await saveLogs(lastEvaluated[busId]); // async-safe
-      // }
     }
   });
 });
@@ -1253,62 +1136,5 @@ const startServer = async () => {
   }
 };
 
+
 startServer();
-
-// let's put the cron job here
-cron.schedule(
-  "0 0 * * *", // Every day at 12:00 AM IST
-  async () => {
-    const nowIST = moment().tz("Asia/Kolkata");
-
-    const currentTime = nowIST.format("YYYY-MM-DD HH:mm:ss");
-    console.log(`⏰ Cron triggered at (IST): ${currentTime}`);
-
-    // 🔹 Clear in-memory object used for location checks
-    console.log("🕛 12:00 AM IST: Clearing lastEvaluated memory...");
-
-    for (const busId in lastEvaluated) {
-      await newsaveLogs(lastEvaluated[busId]);
-
-      delete lastEvaluated[busId];
-    }
-    console.log("🧹 Cleared all entries from lastEvaluated");
-
-    // 🔹 Delete old logs based on logDate (YYYY-MM-DD format)
-    const cutoffDate = nowIST.clone().subtract(10, "day").format("YYYY-MM-DD");
-    console.log(`🧾 Deleting logs with logDate before: ${cutoffDate}`);
-
-    try {
-      const oldLogs = await BusActivityLog.find({
-        logDate: { $lt: cutoffDate },
-      });
-
-      if (oldLogs.length === 0) {
-        console.log("📂 No old logs found to delete.");
-        return;
-      }
-
-      console.log(`📁 Found ${oldLogs.length} old logs to delete.`);
-
-      for (const log of oldLogs) {
-        if (log.morningSnap?.image) {
-          deleteFileIfExists(log.morningSnap.image, "Morning Snap");
-        }
-
-        if (log.eveningSnap?.image) {
-          deleteFileIfExists(log.eveningSnap.image, "Evening Snap");
-        }
-
-        await log.deleteOne();
-        console.log(`✅ Deleted log ID: ${log._id} (logDate: ${log.logDate})`);
-      }
-
-      console.log("🧹 Old logs cleanup complete.");
-    } catch (error) {
-      console.error("❌ Error during cleanup cron job:", error);
-    }
-  },
-  {
-    timezone: "Asia/Kolkata",
-  }
-);
