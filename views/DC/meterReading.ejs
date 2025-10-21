@@ -44,6 +44,8 @@
         <!-- partial -->
         <div class="main-panel">
             <div class="content-wrapper">
+                <h5>Bus Number : <%=bus.busNumber  %> (<%=bus.route  %>)</h5>
+                <br>
 
                 <% if (isMorning) { %> 
                     <!-- अगर अभी सुबह है -->
@@ -81,7 +83,7 @@
                             <div class="col-md-6 grid-margin stretch-card">
                                 <div class="card">
                                     <div class="card-body">
-                                        <h4 class="card-title">सुबह की रीडिंग</h4>
+                                        <h4 class="card-title">सुबह की रीडिंग (<%=bus.busNumber  %>)</h4>
                                         <p class="card-description"> कृपया नीचे दी गई जानकारी भरें </p>
             
                                         <form id="meterForm" class="forms-sample" enctype="multipart/form-data">
@@ -143,7 +145,7 @@
                             <div class="col-md-6 grid-margin stretch-card">
                                 <div class="card">
                                     <div class="card-body">
-                                        <h4 class="card-title">शाम की रीडिंग</h4>
+                                        <h4 class="card-title">शाम की रीडिंग (<%=bus.busNumber%>)</h4>
                                         <p class="card-description"> कृपया नीचे दी गई जानकारी भरें </p>
             
                                         <form id="meterForm" class="forms-sample" enctype="multipart/form-data">
@@ -236,6 +238,7 @@
 
 
 const user = <%- JSON.stringify(user) %>;
+const bus = <%- JSON.stringify(bus) %>;
 const meterForm = document.getElementById("meterForm");
 if(meterForm){
 
@@ -253,7 +256,7 @@ if(meterForm){
   document.getElementById("loader").style.display = "flex";
 
   try {
-    const response = await fetch("/DC/meterReading", {
+    const response = await fetch("/DC/PB/meterReading", {
       method: "POST",
       credentials: "same-origin",
 
@@ -284,7 +287,7 @@ if(meterForm){
                 error.message.includes("Unexpected token '<'") ||
                 error.message.includes("position 0") // Firefox/Edge sometimes
               ) {
-                window.location.href = "/DC";
+                window.location.href = "/DC/PB";
                 return;
               }
     console.error("Error:", error);

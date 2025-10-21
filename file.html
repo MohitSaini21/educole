@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="hi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Bus Access Blocked</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: "Poppins", "Segoe UI", sans-serif;
+        background-color: #000; /* full black */
+        color: #fff;
+        height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+
+      .card {
+        background: linear-gradient(to bottom right, #111, #1c1c1c);
+        padding: 35px 24px;
+        border-radius: 16px;
+        box-shadow: 0 0 20px rgba(255, 255, 255, 0.08);
+        max-width: 400px;
+        width: 90%;
+        text-align: center;
+        transition: all 0.3s ease-in-out;
+      }
+
+      .profile-img {
+        width: 100px;
+        height: 100px;
+        object-fit: cover;
+        border-radius: 50%;
+        margin-bottom: 18px;
+        border: 3px solid #ff5555;
+      }
+
+      .user-name {
+        font-size: 22px;
+        font-weight: 600;
+        margin-bottom: 8px;
+        color: #fff;
+      }
+
+      .user-phone {
+        font-size: 16px;
+        color: #ccc;
+        margin-bottom: 18px;
+      }
+
+      .warning-msg {
+        font-size: 15px;
+        color: #ff6666;
+        font-weight: 500;
+        line-height: 1.5;
+        margin-bottom: 28px;
+      }
+
+      .back-btn {
+        background: #ff5555;
+        border: none;
+        padding: 12px 28px;
+        border-radius: 8px;
+        font-size: 15px;
+        color: #fff;
+        cursor: pointer;
+        transition: background 0.25s;
+      }
+
+      .back-btn:hover {
+        background: #ff3333;
+      }
+
+      @media (max-width: 480px) {
+        .card {
+          padding: 28px 18px;
+        }
+
+        .profile-img {
+          width: 80px;
+          height: 80px;
+        }
+
+        .user-name {
+          font-size: 20px;
+        }
+
+        .user-phone,
+        .warning-msg {
+          font-size: 14px;
+        }
+
+        .back-btn {
+          padding: 10px 22px;
+          font-size: 14px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <img
+        src="<%= user.profilePhoto %>"
+        alt="User Profile"
+        class="profile-img"
+      />
+      <div class="user-name"><%= user.name %></div>
+      <div class="user-phone">फोन: <%= user.phone %></div>
+      <div class="warning-msg">
+        यह बस पहले से ही एक उपयोगकर्ता द्वारा उपयोग की जा रही है। कृपया उसे पहले
+        लॉगआउट करने को कहें।
+      </div>
+      <button class="back-btn" onclick="goBack()">🔙 वापस जाएँ</button>
+    </div>
+
+    <script>
+      function goBack() {
+        window.history.back();
+      }
+    </script>
+  </body>
+</html>

@@ -19,11 +19,20 @@ const complaintSchema = new mongoose.Schema(
       type: String,
       enum: ["parent", "operator"], // ✅ Only these roles allowed
     },
+    submittedWho: {
+      type: String,
+    },
+
+    phone: {
+      type: String,
+    },
+
     status: {
       type: String,
       enum: ["reviewed", "rejected", "pending"], // ✅ Only these roles allowed
       default: "pending",
     },
+
     description: {
       type: String,
     },

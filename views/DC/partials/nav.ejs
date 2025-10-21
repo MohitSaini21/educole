@@ -34,8 +34,6 @@
         >
           <!-- बस आइकन -->
           <i class="mdi mdi-bus"></i>
-  
-          
         </a>
         <div
           class="dropdown-menu dropdown-menu-right navbar-dropdown preview-list"
@@ -74,9 +72,7 @@
               <p class="preview-subject mb-1">
                 रूट : <%= user.assignedBus.route %>
               </p>
-              <p class="text-muted ellipsis mb-0">
-                आपका निर्धारित मार्ग
-              </p>
+              <p class="text-muted ellipsis mb-0">आपका निर्धारित मार्ग</p>
             </div>
           </a>
 
@@ -103,28 +99,22 @@
             <div class="preview-thumbnail">
               <div class="preview-icon bg-dark rounded-circle">
                 <% if (user.assignedBus.status === 'operational') { %>
-                  <i class="mdi mdi-bus"></i>
+                <i class="mdi mdi-bus"></i>
                 <% } else { %>
-                  <i class="mdi mdi-bus"></i>
+                <i class="mdi mdi-bus"></i>
                 <% } %>
               </div>
             </div>
             <div class="preview-item-content">
               <p class="preview-subject mb-1">
-                बस की स्थिति :
-                <% if (user.assignedBus.status === 'Operational') { %>
-                  संचालित (चालू)
-                <% } else { %>
-                  सेवा में नहीं (बंद)
-                <% } %>
+                बस की स्थिति : <% if (user.assignedBus.status === 'Operational')
+                { %> संचालित (चालू) <% } else { %> सेवा में नहीं (बंद) <% } %>
               </p>
               <p class="text-muted ellipsis mb-0">
                 यही फ़ैक्टर ज़िम्मेदार है कि आप लाइव जा सकते हैं या नहीं
               </p>
             </div>
           </a>
-          
-          
         </div>
       </li>
 
@@ -163,7 +153,9 @@
               </div>
             </div>
             <div class="preview-item-content">
-              <p class="preview-subject mb-1" onclick="Redirect()"> लॉगआउट करें (Log out)</p>
+              <p class="preview-subject mb-1" onclick="Redirect()">
+                लॉगआउट करें (Log out)
+              </p>
             </div>
           </a>
           <div class="dropdown-divider"></div>

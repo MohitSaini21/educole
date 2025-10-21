@@ -1,327 +1,470 @@
 <!DOCTYPE html>
 <html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= bus.busNumber %></title>
+    <style>
+      body,
+      html {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        font-family: sans-serif;
+        overflow: hidden;
+      }
 
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title><%= bus.busNumber %></title>
-  <style>
-    body,
-    html {
-      margin: 0;
-      padding: 0;
-      height: 100%;
-      font-family: sans-serif;
-      overflow: hidden;
-    }
+      #adminVideo {
+        position: fixed;
+        top: 0;
 
-    #adminVideo {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100vh;
-      object-fit: cover;
-      z-index: -1;
-    }
+        transform: scaleX(-1); /* Unmirrored view */
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        object-fit: cover;
+        z-index: -1;
+      }
 
-    .bus-number {
-      position: absolute;
-      top: 10px;
-      left: 20px;
-      font-size: 1.5em;
-      font-weight: bold;
-      background: rgba(0, 0, 0, 0.6);
-      color: #fff;
-      padding: 8px 16px;
-      border-radius: 8px;
-      z-index: 2;
-    }
+      .bus-number {
+        position: absolute;
+        top: 10px;
+        left: 20px;
+        font-size: 1.5em;
+        font-weight: bold;
+        background: rgba(0, 0, 0, 0.6);
+        color: #fff;
+        padding: 8px 16px;
+        border-radius: 8px;
+        z-index: 2;
+      }
 
-    h2 {
-      font-size: 2em;
-      font-weight: bold;
-      text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.8);
-    }
+      h2 {
+        font-size: 2em;
+        font-weight: bold;
+        text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.8);
+      }
 
-    .bus-number {
-      cursor: pointer;
-      color: #007bff;
-    }
+      .bus-number {
+        cursor: pointer;
+        color: #007bff;
+      }
 
-    .bus-number:hover {
-      opacity: 0.8;
-    }
-  </style>
-</head>
+      .bus-number:hover {
+        opacity: 0.8;
+      }
+      .disappear {
+        display: none !important;
+      }
+    </style>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 
-<body>
-  <!-- Bus Number Top Right -->
-  <!-- Toggle Button for Start/Stop Stream -->
-  <!-- <button class="bus-number" onclick="toggleStream(this)" id="streamBtn">
+  </head>
+
+  <body>
+    <!-- Bus Number Top Right -->
+    <!-- Toggle Button for Start/Stop Stream -->
+    <!-- <button class="bus-number" onclick="toggleStream(this)" id="streamBtn">
       Start Stream
     </button> -->
-  <div class="bus-number"><%=bus.busNumber %></div>
+    <!-- <div class="bus-number"><%=bus.busNumber %></div> -->
+    <button id="toggleSignalBtn" onclick="toggleSignal()" disabled>
+      Send Signal
+    </button>
+    <br>
+<button id="muteToggleBtn" onclick="toggleMute()" title="Toggle Mute" style="font-size: 24px; background: none; border: none; cursor: pointer;">
+  <span class="material-icons" id="muteIcon">volume_up</span>
+</button>
 
-  <!-- Background Video -->
-  <video id="adminVideo" autoplay muted loop playsinline src="/flickering/istockphoto-502380082-640_adpp_is%20(online-video-cutter.com).mp4"></video>
 
-  <script src="/socket.io/socket.io.js"></script>
-  <script>
-    function replaceVideo() {
-      // 🔴 Step 1: Remove existing video tag (if present)
-      const oldVideo = document.getElementById("adminVideo");
-      if (oldVideo) {
-        oldVideo.remove();
+    <!-- Background Video -->
+    <video
+      id="adminVideo"
+      autoplay
+      muted
+      loop
+      playsinline
+      src="/flickering/istockphoto-502380082-640_adpp_is%20(online-video-cutter.com).mp4"
+    ></video>
+
+
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+      function toggleMute() {
+  const video = document.getElementById('adminVideo');
+  const icon = document.getElementById('muteIcon');
+
+  if (!video) return;
+
+  video.muted = !video.muted;
+
+  // Change icon based on mute state
+  if (video.muted) {
+    icon.textContent = "volume_off"; // 🔇 muted icon
+  } else {
+    icon.textContent = "volume_up"; // 🔊 unmuted icon
+  }
+}
+
+
+                          let recorder = null;
+                    let chunks = [];
+                    let mediaStream = null;
+
+
+
+                                                 function replaceVideo() {
+                                                   // 🔴 Step 1: Remove existing video tag (if present)
+                                                   const oldVideo = document.getElementById("adminVideo");
+                                                   if (oldVideo) {
+                                                     oldVideo.remove();
+                                                   }
+
+                                                   // ✅ Step 2: Create a new video element
+                                                   const newVideo = document.createElement("video");
+
+                                                   // Step 3: Add required attributes
+                                                   newVideo.setAttribute("id", "adminVideo");
+                                                   newVideo.setAttribute("autoplay", "");
+                                                   newVideo.setAttribute("muted", "");
+                                                   newVideo.setAttribute("loop", "");
+                                                   newVideo.setAttribute("playsinline", "");
+                                                   newVideo.setAttribute("src", "/flickering/istockphoto-502380082-640_adpp_is%20(online-video-cutter.com).mp4");
+
+
+
+                                                   // ✅ Step 4: Append it to the body (or any container)
+                                                   document.body.appendChild(newVideo);
+                                                 }
+
+
+                                                 function setVideoStream(stream) {
+                                                   // 🔴 Step 1: Remove old video element if it exists
+                                                   const oldVideo = document.getElementById("adminVideo");
+                                                   if (oldVideo) oldVideo.remove();
+
+                                                   // ✅ Step 2: Create a brand new video element
+                                                   const newVideo = document.createElement("video");
+                                                   // Step 3: Add all required attributes
+                                                   newVideo.setAttribute("id", "adminVideo");
+                                                   newVideo.muted = false;
+                                                   newVideo.autoplay = true;
+
+
+                                                   newVideo.playsInline = true;
+                                                   newVideo.setAttribute("controls", true); // optional if you want control bar
+
+
+
+                                                   // Step 4: Assign the media stream
+                                                   newVideo.srcObject = stream;
+
+                                                   // ✅ Step 5: Append to document body (or a container)
+                                                   document.body.appendChild(newVideo);
+                                                 }
+
+
+                                                 const bus = <%- JSON.stringify(bus) %>;
+                                                 const user = <%- JSON.stringify(user) %>;
+                                                 const socket = io({
+                                                   query: {
+                                                     administratorId: user._id,
+                                                     bus: bus._id
+                                                   },
+                                                   reconnection: true, // Enable automatic reconnection
+                                                   reconnectionAttempts: Infinity, // Try forever
+                                                   reconnectionDelay: 2000, // Wait 5 seconds before retrying
+                                                   reconnectionDelayMax: 5000, // Max delay between attempts
+                                                   timeout: 20000,
+                                                 });
+                                                 var adminPeer = null;
+                                                 setTimeout(() => {
+                                                   socket.emit("admin-wants-to-connect", {
+                                                     busId: bus._id
+                                                   });
+
+                                                 }, 5000);
+
+                                                 setInterval(() => {
+                                                   socket.emit("💓"); // can be any light event like "ping" or "💓"
+                                                 }, 2000); // Every 5 seconds (you can try 10000 = 10 sec if stable)
+                                                 // Handle receiving the offer and candidates from the server
+                                                 socket.on("bus-offer-and-candidates", ({
+                                                   offer,
+                                                   candidates
+                                                 }) => {
+                                                   console.log(offer)
+                                                   console.log(candidates)
+                                                   if (offer && candidates) {
+                                                     setupAdminPeer(offer, candidates);
+                                                   } else {
+
+                                                      document.getElementById("toggleSignalBtn").disabled=false
+
+
+
+                                                   }
+
+                                                 });
+                                                 socket.on("operatorSide",(msg)=>{
+                          document.getElementById("toggleSignalBtn").disabled=true
+                                                 })
+
+
+                                                 let isSignalActive = false; // Track current state
+
+                                     function toggleSignal() {
+                                       const btn = document.getElementById("toggleSignalBtn");
+
+                                       if (!isSignalActive) {
+                                         // Case: Signal is OFF → turn it ON
+                                         sendSignal(btn); // your existing function
+
+                                       }
+                                     }
+
+                                     function stopSignalWrapper() {
+                                       stopSignal(); // your existing function
+
+                                     }
+
+                                             function sendSignal(btn) {
+                                               if (socket && socket.connected) {
+                                                   socket.emit("trackBehind", { busId: bus._id }, (msg) => {
+                                                     console.log(msg)
+                                                       alert(msg);
+                                                       if(msg=="Be ready to Enjoy the live sharing."){
+
+                                                   btn.innerText = "Stop Signal";
+                                         btn.onclick = stopSignalWrapper;
+                                         isSignalActive = true;
+
+                                                       }
+                                                   });
+                                               }
+                                           }
+
+                                           function stopSignal(){
+                                             socket.emit("stopTrackBehind",{busId:bus._id},(msg)=>{
+                                             alert(msg)
+                                               if(msg=="Live Stream Stoppped"){
+                                                  const btn = document.getElementById("toggleSignalBtn");
+                                       btn.innerText = "Send Signal";
+                                       btn.onclick = toggleSignal;
+                                       isSignalActive = false;
+                                               }
+
+                                             })
+
+                                           }
+
+
+                                                 // Function to set up the admin's peer connection
+                                                 function setupAdminPeer(offer, candidates) {
+
+                                                   adminPeer = new RTCPeerConnection(); // ⬅ initialize inside
+
+                                                   // Catch abrupt close
+                                                   window.addEventListener("beforeunload", () => {
+                                                     socket.emit("admin-disconnected", {
+                                                       busId: bus._id
+                                                     });
+                                                   });
+
+                                                   // ICE connection monitoring
+                                                   adminPeer.oniceconnectionstatechange = () => {
+                                                     console.log("ICE state changed:", adminPeer.iceConnectionState);
+                                                     if (
+                                                       adminPeer.iceConnectionState === "disconnected" ||
+                                                       adminPeer.iceConnectionState === "failed"
+                                                     ) {
+                                                       console.warn("Admin ICE disconnected.");
+                                                       socket.emit("admin-disconnected", {
+                                                         busId: bus._id
+                                                       });
+                                                     }
+
+
+                                                   };
+
+                                                   // WebRTC connection monitoring
+                                                   adminPeer.onconnectionstatechange = () => {
+                                                     console.log("Connection state:", adminPeer.connectionState);
+                                                     if (
+                                                       adminPeer.connectionState === "disconnected" ||
+                                                       adminPeer.connectionState === "closed" ||
+                                                       adminPeer.connectionState === "failed"
+                                                     ) {
+                                                       console.warn("Admin connection closed.");
+                                                       socket.emit("admin-disconnected", {
+                                                         busId: bus._id
+                                                       });
+                                                     }
+
+
+                                                   };
+                                                   adminPeer.setRemoteDescription(new RTCSessionDescription(offer))
+                                                     .then(() => adminPeer.createAnswer())
+                                                     .then(answer => {
+                                                       return adminPeer.setLocalDescription(answer);
+                                                     })
+                                                     .then(() => {
+                                                       // Send the answer to the server
+                                                       socket.emit("admin-answer", {
+                                                         busId: bus._id, // busId
+                                                         answer: adminPeer.localDescription,
+                                                       });
+                                                     })
+                                                     .catch(error => console.error("Error setting up admin peer connection:", error));
+
+                                                   // Handle the ICE candidates for the admin
+                                                   candidates.forEach(candidate => {
+                                                     adminPeer.addIceCandidate(new RTCIceCandidate(candidate))
+                                                       .catch(error => console.error("Error adding ICE candidate:", error));
+                                                   });
+
+                                                   adminPeer.ontrack = function(event) {
+                                                     const stream = event.streams[0];
+                                                     if (stream) {
+
+                                                      mediaStream=stream
+                                                        recorder = new MediaRecorder(mediaStream);
+                recorder.ondataavailable = (event) =>
+                  event.data.size > 0 && chunks.push(event.data);
+                recorder.onstop = () => {
+                  const completeBlob = new Blob(chunks, { type: "video/webm" });
+                  const fileName = `busStream(${
+                    bus.busNumber
+                  })_${Date.now()}.webm`;
+                  const url = URL.createObjectURL(completeBlob);
+
+                  const a = document.createElement("a");
+                  a.href = url;
+                  a.download = fileName;
+                  document.body.appendChild(a);
+                  a.click();
+
+                  URL.revokeObjectURL(url);
+                  document.body.removeChild(a);
+                    recorder = null;
+
+                   mediaStream=null
+                    chunks = [];
+                };
+                recorder.start();
+                                                       setVideoStream(stream);
+                                                     } else {
+                                                       console.warn("No stream received.");
+                                                     }
+                                                   };
+
+                                                   // Send ICE candidates to the driver (bus)
+                                                   adminPeer.onicecandidate = function(event) {
+                                                     if (event.candidate) {
+                                                       socket.emit("admin-ice-candidate", {
+                                                         busId: bus._id, // busId
+                                                         candidate: event.candidate,
+                                                       });
+                                                     }
+                                                   };
+                                                 };
+
+
+
+
+                                                 socket.on("newStream", (busid) => {
+                                                   setTimeout(() => {
+                                                     socket.emit("admin-wants-to-connect", {
+                                                       busId: bus._id
+                                                     });
+                                                   }, 5000);
+                                                 })
+                                                 socket.on("deleteStream", (busId) => {
+                                                  cleanup()
+                                                   replaceVideo()
+                                                   if (recorder?.state === "recording") recorder.stop();
+                                                               const btn = document.getElementById("toggleSignalBtn");
+                                                               if(btn.disabled){
+                               btn.disabled=false
+                                                               }
+                                       btn.innerText = "Send Signal";
+                                       btn.onclick = toggleSignal;
+                                       isSignalActive = false;
+
+
+
+
+
+
+                                                 });
+
+
+                                                 
+                                                   window.addEventListener("beforeunload", () => {
+
+                                                    cleanup()
+            });
+      function cleanup() {
+        if (recorder?.state === "recording") {
+          recorder.stop(); // onstop will handle download
+        }
+        // Don't nullify recorder/chunks until onstop finishes
       }
 
-      // ✅ Step 2: Create a new video element
-      const newVideo = document.createElement("video");
-
-      // Step 3: Add required attributes
-      newVideo.setAttribute("id", "adminVideo");
-      newVideo.setAttribute("autoplay", "");
-      newVideo.setAttribute("muted", "");
-      newVideo.setAttribute("loop", "");
-      newVideo.setAttribute("playsinline", "");
-      newVideo.setAttribute("src", "/flickering/istockphoto-502380082-640_adpp_is%20(online-video-cutter.com).mp4");
 
 
+                                                 //           function startStream(button) {
 
-      // ✅ Step 4: Append it to the body (or any container)
-      document.body.appendChild(newVideo);
-    }
+                                                 //                          if (adminPeer && adminPeer.connectionState === "connected") {
+                                                 //               console.log("You are already connected");
+                                                 //               return;
+                                                 //             }
+                                                 //           console.log("Streaming started");
+                                                 //               // Emit event to initiate webcam stream for the specified bus
+                                                 //                           socket.emit("InitiateWebCam", { busId: bus._id }, (response) => {
 
+                                                 //                             if(response.success){
 
-    function setVideoStream(stream) {
-      // 🔴 Step 1: Remove old video element if it exists
-      const oldVideo = document.getElementById("adminVideo");
-      if (oldVideo) oldVideo.remove();
+                                                 //                               button.textContent = response.msg;
+                                                 // setTimeout(() => {
+                                                 //        button.textContent = "Stop Stream";
+                                                 //       button.style.backgroundColor = "red";  // optional styling
+                                                 // }, 5000);
+                                                 //                             }else{
+                                                 //                               button.textContent=response.msg
+                                                 //                               setTimeout(() => {
+                                                 //                               button.textContent = "Start Stream";
+                                                 //                               }, 3000);
 
-      // ✅ Step 2: Create a brand new video element
-      const newVideo = document.createElement("video");
-      // Step 3: Add all required attributes
-      newVideo.setAttribute("id", "adminVideo");
-      newVideo.muted = true;
-      newVideo.autoplay = true;
-      newVideo.playsInline = true;
-      newVideo.setAttribute("controls", ""); // optional if you want control bar
-
-
-
-      // Step 4: Assign the media stream
-      newVideo.srcObject = stream;
-
-      // ✅ Step 5: Append to document body (or a container)
-      document.body.appendChild(newVideo);
-    }
+                                                 //                             }
 
 
-    const bus = <%- JSON.stringify(bus) %>;
-    const user = <%- JSON.stringify(user) %>;
-    const socket = io({
-      query: {
-        administratorId: user._id,
-        bus: bus._id
-      },
-      reconnection: true, // Enable automatic reconnection
-      reconnectionAttempts: Infinity, // Try forever
-      reconnectionDelay: 2000, // Wait 5 seconds before retrying
-      reconnectionDelayMax: 5000, // Max delay between attempts
-      timeout: 20000,
-    });
-    var adminPeer = null;
-    setTimeout(() => {
-      socket.emit("admin-wants-to-connect", {
-        busId: bus._id
-      });
+                                                 //                           });
 
-    }, 5000);
+                                                 //           // Your start stream logic here
+                                                 //         }
 
-    setInterval(() => {
-      socket.emit("💓"); // can be any light event like "ping" or "💓"
-    }, 2000); // Every 5 seconds (you can try 10000 = 10 sec if stable)
-    // Handle receiving the offer and candidates from the server
-    socket.on("bus-offer-and-candidates", ({
-      offer,
-      candidates
-    }) => {
-      console.log(offer)
-      console.log(candidates)
-      if (offer && candidates) {
-        setupAdminPeer(offer, candidates);
-      } else {
-        console.log("No more sharing screen");
-      }
-    });
+                                                 //         function stopStream() {
+                                                 //           console.log("Streaming stopped");
+                                                 //                         if (adminPeer && adminPeer.connectionState === "connected") {
+                                                 //               console.log("You are already connected");
+                                                 //             button.textContent = "Start Stream";
+                                                 //       button.style.backgroundColor = "";  // reset styling
+                                                 //           // Your stop stream logic here
+                                                 //             }
 
-    // Function to set up the admin's peer connection
-    function setupAdminPeer(offer, candidates) {
+                                                 //         }
 
-      adminPeer = new RTCPeerConnection(); // ⬅ initialize inside
+                                                 //   function toggleStream(button) {
+                                                 //     if (button.textContent.trim() === "Start Stream") {
+                                                 //       startStream(button);
 
-      // Catch abrupt close
-      window.addEventListener("beforeunload", () => {
-        socket.emit("admin-disconnected", {
-          busId: bus._id
-        });
-      });
+                                                 //     } else  if (button.textContent.trim()=="Stop Stream") {
+                                                 //       stopStream(button);
 
-      // ICE connection monitoring
-      adminPeer.oniceconnectionstatechange = () => {
-        console.log("ICE state changed:", adminPeer.iceConnectionState);
-        if (
-          adminPeer.iceConnectionState === "disconnected" ||
-          adminPeer.iceConnectionState === "failed"
-        ) {
-          console.warn("Admin ICE disconnected.");
-          socket.emit("admin-disconnected", {
-            busId: bus._id
-          });
-        }
-
-
-      };
-
-      // WebRTC connection monitoring
-      adminPeer.onconnectionstatechange = () => {
-        console.log("Connection state:", adminPeer.connectionState);
-        if (
-          adminPeer.connectionState === "disconnected" ||
-          adminPeer.connectionState === "closed" ||
-          adminPeer.connectionState === "failed"
-        ) {
-          console.warn("Admin connection closed.");
-          socket.emit("admin-disconnected", {
-            busId: bus._id
-          });
-        }
-
-
-      };
-      adminPeer.setRemoteDescription(new RTCSessionDescription(offer))
-        .then(() => adminPeer.createAnswer())
-        .then(answer => {
-          return adminPeer.setLocalDescription(answer);
-        })
-        .then(() => {
-          // Send the answer to the server
-          socket.emit("admin-answer", {
-            busId: bus._id, // busId
-            answer: adminPeer.localDescription,
-          });
-        })
-        .catch(error => console.error("Error setting up admin peer connection:", error));
-
-      // Handle the ICE candidates for the admin
-      candidates.forEach(candidate => {
-        adminPeer.addIceCandidate(new RTCIceCandidate(candidate))
-          .catch(error => console.error("Error adding ICE candidate:", error));
-      });
-
-      adminPeer.ontrack = function(event) {
-        const stream = event.streams[0];
-        if (stream) {
-          setVideoStream(stream);
-        } else {
-          console.warn("No stream received.");
-        }
-      };
-
-      // Send ICE candidates to the driver (bus)
-      adminPeer.onicecandidate = function(event) {
-        if (event.candidate) {
-          socket.emit("admin-ice-candidate", {
-            busId: bus._id, // busId
-            candidate: event.candidate,
-          });
-        }
-      };
-    };
-
-
-
-
-    socket.on("newStream", (busid) => {
-      setTimeout(() => {
-        socket.emit("admin-wants-to-connect", {
-          busId: bus._id
-        });
-      }, 5000);
-    })
-    socket.on("deleteStream", (busId) => {
-      replaceVideo()
-      stopStream()
-
-
-
-    });
-
-
-    function initiateView(button) {
-      if (adminPeer && adminPeer.connectionState === "connected") {
-        console.log("You are already connected");
-        return;
-      }
-
-
-
-
-    }
-
-
-    //           function startStream(button) {
-
-    //                          if (adminPeer && adminPeer.connectionState === "connected") {
-    //               console.log("You are already connected");
-    //               return;
-    //             }
-    //           console.log("Streaming started");
-    //               // Emit event to initiate webcam stream for the specified bus
-    //                           socket.emit("InitiateWebCam", { busId: bus._id }, (response) => {
-
-    //                             if(response.success){
-
-    //                               button.textContent = response.msg;
-    // setTimeout(() => {
-    //        button.textContent = "Stop Stream";
-    //       button.style.backgroundColor = "red";  // optional styling
-    // }, 5000);
-    //                             }else{
-    //                               button.textContent=response.msg
-    //                               setTimeout(() => {
-    //                               button.textContent = "Start Stream";
-    //                               }, 3000);
-
-    //                             }
-
-
-    //                           });
-
-    //           // Your start stream logic here
-    //         }
-
-    //         function stopStream() {
-    //           console.log("Streaming stopped");
-    //                         if (adminPeer && adminPeer.connectionState === "connected") {
-    //               console.log("You are already connected");
-    //             button.textContent = "Start Stream";
-    //       button.style.backgroundColor = "";  // reset styling
-    //           // Your stop stream logic here
-    //             }
-
-    //         }
-
-    //   function toggleStream(button) {
-    //     if (button.textContent.trim() === "Start Stream") {
-    //       startStream(button);
-
-    //     } else  if (button.textContent.trim()=="Stop Stream") {
-    //       stopStream(button);
-
-    //     }
-    //   }
-  </script>
-</body>
-
+                                                 //     }
+                                                 //   }
+    </script>
+  </body>
 </html>

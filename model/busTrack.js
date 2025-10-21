@@ -19,12 +19,18 @@ const busActivityLogSchema = new Schema({
   logDate: {
     type: String, // format: "YYYY-MM-DD"
     required: true,
+    index: true,
   },
 
   path: [
     {
       lat: { type: Number, required: true },
       lon: { type: Number, required: true },
+    },
+  ],
+  whoDrived: [
+    {
+      type: String,
     },
   ],
   events: [
@@ -42,6 +48,9 @@ const busActivityLogSchema = new Schema({
     reading: {
       type: Number,
     },
+    submittedWho: {
+      type: String,
+    },
     image: {
       type: String, // URL or path to uploaded image
       required: false,
@@ -55,6 +64,9 @@ const busActivityLogSchema = new Schema({
   eveningSnap: {
     reading: {
       type: Number,
+    },
+    submittedWho: {
+      type: String,
     },
     image: {
       type: String, // URL or path to uploaded image

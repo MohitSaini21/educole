@@ -48,7 +48,8 @@
               <div class="col-md-8 mx-auto grid-margin stretch-card">
                 <div class="card">
                   <div class="card-body">
-                    <h4 class="card-title">शिकायत दर्ज करें (Register Complaint)</h4>
+                  <h4 class="card-title">शिकायत दर्ज करें (Register Complaint) for (<%=bus.busNumber  %>)</h4>
+
                     <p class="card-description text-muted">
                       कृपया सभी आवश्यक जानकारी भरें और यदि संभव हो तो संबंधित फ़ाइलें अपलोड करें। <br>
                       Please fill in all required details and upload relevant media if possible.
@@ -191,7 +192,8 @@ const user = <%- JSON.stringify(user) %>;
  
           
           formData.append("incidentTime", incidentTime);
-          formData.append("busNumber", user.assignedBus.busNumber);
+
+          
     
           if (mediaFile) {
             formData.append("media", mediaFile);
@@ -207,7 +209,7 @@ const user = <%- JSON.stringify(user) %>;
           document.getElementById("loader").style.display = "flex";
         
           try {
-            const response = await fetch("/DC/registerComplain", {
+            const response = await fetch("/DC/PB/registerComplain", {
               method: "POST",
               credentials: "same-origin",
 
@@ -232,7 +234,7 @@ document.getElementById("loader").style.display = "none";
                 error.message.includes("Unexpected token '<'") ||
                 error.message.includes("position 0") // Firefox/Edge sometimes
               ) {
-                window.location.href = "/DC";
+                window.location.href = "/DC/PB";
                 return;
               }
             console.error("❌ नेटवर्क त्रुटि:", error);

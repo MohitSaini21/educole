@@ -1,31 +1,39 @@
 import jwt from "jsonwebtoken";
 
-export const generateTokenAndSetCookie = async (res, id, role) => {
-  // Step 1: Create the JWT token
-  // The payload is the user ID, which will be embedded inside the token.
-  // The "Secret String" is the secret key used to sign the token, which ensures its integrity.
-  const token = jwt.sign(
-    { id, role }, // The payload containing the user's ID (this will be encoded in the token)
-    "Secret String", // The secret key for signing the JWT token
-    {
-      expiresIn: "30d", // Token expiration time (1 hour here). You can adjust this as needed
-    }
-  );
-  //   console.log(token)
-
-  // Step 2: Set the token in a cookie
-  // We're setting an HTTP-only cookie, meaning the client cannot directly access it via JavaScript.
-  // This is a good security measure to prevent cross-site scripting (XSS) attacks.
+/**
+ * Generate a JWT token and set it in a cookie
+ * @param {object} res - Express response object
+ * @param {string} id - User or bus ID
+ * @param {string} role - Optional role (e.g., 'driver', 'admin'); if omitted, treated as a bus
+ * @returns {string} - The JWT token
+ */
+export const generateTokenAndSetCookie = async (res, id, role = "") => {
   try {
-    res.cookie("authToken", token, {
-      httpOnly: true, // Make the cookie inaccessible to client-side JavaScript and it websites from the xxx attacks.
-      secure: process.env.NODE_ENV === "production", // Ensure cookies are sent only over HTTPS in production
-      sameSite: "Strict", // The cookie will only be sent to the same site (prevents CSRF attacks)
-      maxAge: 30 * 24 * 60 * 60 * 1000,
-    });
-  } catch (error) {
-    console.log(`Knock Knock Error in Cookie ${error.mesage}`);
-  }
+    // ✅ Create token payload
+    const payload = role ? { id, role } : { id };
 
-  return token;
+    // ✅ Set token expiration
+    const expiresIn = role ? "30d" : "1d";
+
+    // ✅ Sign the token
+    const token = jwt.sign(payload, "Secret String", { expiresIn });
+
+    // ✅ Set appropriate cookie name and duration
+    const cookieName = role ? "authToken" : "busToken";
+    const maxAge = role ? 30 * 24 * 60 * 60 * 1000 : 1 * 24 * 60 * 60 * 1000; // in ms
+
+    res.cookie(cookieName, token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "Strict",
+      maxAge,
+    });
+
+    return token;
+  } catch (error) {
+    console.error(
+      `❌ Error generating token or setting cookie: ${error.message}`
+    );
+    throw new Error("Failed to generate token"); // Let the caller handle it if needed
+  }
 };

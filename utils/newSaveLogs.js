@@ -4,19 +4,19 @@ import Bus from "../model/bus.js";
 import BusActivityLog from "../model/busTrack.js";
 
 export default async function newsaveLogs(busObject) {
-  // Validate presence of any meaningful data
+  // 1. Basic Validation
   if (
     !busObject?.reachedStops &&
     !busObject?.path &&
     !busObject?.eventTimeline &&
-    !(busObject?.distanceCovered > 0)
+    !(parseFloat(busObject?.distanceCovered) > 0)
   ) {
     console.log("🛑 Nothing to save: no stops, path, events, or distance.");
     return;
   }
 
   try {
-    // Validate busId
+    // 2. Validate busId
     if (!busObject.busId || !mongoose.Types.ObjectId.isValid(busObject.busId)) {
       console.log("❌ Invalid or missing busId.");
       return;
@@ -25,7 +25,7 @@ export default async function newsaveLogs(busObject) {
     const busId = new mongoose.Types.ObjectId(busObject.busId);
     const logDateIST = moment().tz("Asia/Kolkata").format("YYYY-MM-DD");
 
-    // Find existing log or create if missing
+    // 3. Find or create activity log
     const log = await BusActivityLog.findOneAndUpdate(
       { bus: busId, logDate: logDateIST },
       {
@@ -35,6 +35,7 @@ export default async function newsaveLogs(busObject) {
           stops: [],
           path: [],
           events: [],
+          whoDrived: [],
           distanceCovered: 0,
           createdAt: new Date(),
         },
@@ -42,14 +43,18 @@ export default async function newsaveLogs(busObject) {
       { new: true, upsert: true }
     );
 
-    // 🧠 Build stop data array
-    if (busObject.reachedStops && typeof busObject.reachedStops === "object") {
+    // 4. Reached Stops
+    if (
+      busObject.reachedStops &&
+      typeof busObject.reachedStops === "object" &&
+      Object.keys(busObject.reachedStops).length > 0
+    ) {
       for (const stopId in busObject.reachedStops) {
         const stop = busObject.reachedStops[stopId] || {};
         log.stops.push({
           stop: mongoose.Types.ObjectId.isValid(stopId)
             ? new mongoose.Types.ObjectId(stopId)
-            : stopId, // fallback if stopId is not an ObjectId
+            : stopId,
           stopName: stop.stopName || null,
           morningTime: stop.morningTime || null,
           eveningTime: stop.eveningTime || null,
@@ -59,7 +64,7 @@ export default async function newsaveLogs(busObject) {
       }
     }
 
-    // 🧠 Append path points
+    // 5. Path Points
     if (Array.isArray(busObject.path)) {
       const validPathPoints = busObject.path.filter(
         (p) =>
@@ -74,10 +79,15 @@ export default async function newsaveLogs(busObject) {
       }
     }
 
-    // 🧠 Build events data
+    // 6. Drivers (whoDrived)
+    if (Array.isArray(busObject.whoDrived) && busObject.whoDrived.length > 0) {
+      log.whoDrived.push(...busObject.whoDrived);
+    }
+
+    // 7. Events
     if (
       Array.isArray(busObject.eventTimeline) &&
-      busObject.eventTimeline.length
+      busObject.eventTimeline.length > 0
     ) {
       const eventsData = busObject.eventTimeline
         .filter((item) => item?.eventType && item?.time)
@@ -86,54 +96,38 @@ export default async function newsaveLogs(busObject) {
           event: item.eventType,
           timestamp: item.time,
         }));
-      if (eventsData.length) {
-        log.events = eventsData;
+
+      if (eventsData.length > 0) {
+        log.events.push(...eventsData);
       }
     }
 
-    // 🧠 Handle distance covered
-    if (
-      typeof busObject.distanceCovered === "number" &&
-      busObject.distanceCovered > 0
-    ) {
-      try {
-        console.log(
-          `📏 Distance covered received: ${busObject.distanceCovered}`
-        );
+    // 8. Distance Covered
+    const distance = parseFloat(busObject.distanceCovered);
+    if (!isNaN(distance) && distance > 0) {
+      log.distanceCovered =
+        Math.round((log.distanceCovered + distance) * 1000) / 1000;
 
-        // Update log
-        log.distanceCovered =
-          Math.round((log.distanceCovered + busObject.distanceCovered) * 1000) /
-          1000;
-
-        console.log(`📝 Updated log distance: ${log.distanceCovered}`);
-
-        // Update bus total distance
-        const bus = await Bus.findById(busId);
-        if (!bus) {
-          console.error(`❌ No bus found for ID: ${busId}`);
-        } else {
-          bus.distanceTravelled =
-            Math.round(
-              (bus.distanceTravelled + busObject.distanceCovered) * 1000
-            ) / 1000;
-          console.log(`🚌 Updated bus distance: ${bus.distanceTravelled}`);
-          await bus.save();
-          console.log("✅ Bus saved successfully");
-        }
-      } catch (error) {
-        console.error("❌ Error in adding the distance:", error);
+      // Also update bus total distance
+      const bus = await Bus.findById(busId);
+      if (!bus) {
+        console.error(`❌ Bus not found for ID: ${busId}`);
+      } else {
+        bus.distanceTravelled =
+          Math.round((bus.distanceTravelled + distance) * 1000) / 1000;
+        await bus.save();
+        console.log("✅ Bus updated with new distance.");
       }
     }
 
-    // Save the log
+    // 9. Save activity log
     await log.save();
     console.log(`✅ Log saved or updated for bus ${busObject.busId}`);
   } catch (err) {
     if (err.code === 11000) {
       console.warn("⚠️ Duplicate log prevented by unique index");
     } else {
-      console.error("❌ Error saving bus logs:", err.message);
+      console.error("❌ Error saving bus logs:", err);
     }
   }
 }

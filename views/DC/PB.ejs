@@ -1,0 +1,395 @@
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, shrink-to-fit=no"
+    />
+    <title> Educole</title>
+    <!-- plugins:css -->
+    <link
+      rel="stylesheet"
+      href="/assets/vendors/mdi/css/materialdesignicons.min.css"
+    />
+
+
+    
+    
+    <link rel="stylesheet" href="/assets/vendors/css/vendor.bundle.base.css" />
+    <link rel="stylesheet" href="/assets/loader.css" />
+    <!-- endinject -->
+    <!-- Plugin css for this page -->
+    <!-- End Plugin css for this page -->
+    <!-- inject:css -->
+    <!-- endinject -->
+    <!-- Layout styles -->
+    <link rel="stylesheet" href="/assets/css/style.css" />
+    <!-- End layout styles -->
+
+    
+    <style>
+.icon-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  gap: 16px;
+  justify-items: center;
+  margin-top: 20px;
+}
+
+.action-icon {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 100px;
+  height: 100px;
+  border-radius: 12px;
+  background-color: #f1c40f;
+  color: white;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  font-size: 16px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.action-icon i {
+  font-size: 26px;
+  margin-bottom: 8px;
+}
+
+.action-icon span {
+  font-size: 14px;
+  font-weight: 500;
+  text-align: center;
+}
+
+.action-icon:hover {
+  background-color: #f1c40f;
+  transform: scale(1.05);
+}
+
+/* Mobile responsive tweaks */
+@media (max-width: 576px) {
+  .action-icon {
+    max-width: 100%;
+    height: 90px;
+  }
+
+  .action-icon i {
+    font-size: 22px;
+  }
+
+  .action-icon span {
+    font-size: 13px;
+  }
+}
+
+
+    </style>
+    <link
+  rel="stylesheet"
+  href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+/>
+
+     
+
+
+    
+  </head>
+  <body>
+    <div class="container-scroller">
+      <!-- partial:../../partials/_sidebar.html -->
+
+      <%- include('./partials/sidebar.ejs') %>
+      <%- include('./partials/loader.ejs') %>
+      <!-- partial -->
+      <div class="container-fluid page-body-wrapper">
+        <!-- partial:../../partials/_navbar.html -->
+
+        <%- include('./partials/nav.ejs') %>
+        <!-- partial -->
+        <div class="main-panel">
+          <div class="content-wrapper">
+            <div class="row">
+           <!-- LEFT: Real-time Operations -->
+<div class="col-md-6 grid-margin stretch-card">
+  <div class="card shadow">
+    <div class="card-body text-center">
+      <h4 class="card-title mb-3">🔧 Logged In Bus Number (<%= bus.busNumber %>)</h4>
+      <p>route : <%=bus.route  %>
+      </p>
+
+      <div class="icon-grid">
+        <!-- 1. Go Live -->
+        <a href="/DC/PB/driverGoLive" class="action-icon" title="Go Live / Provide Location">
+          <i class="fas fa-map-marked-alt"></i>
+          <span>Live</span>
+        </a>
+
+        <!-- 2. Register Complaint -->
+        <a href="/DC/PB/registerComplain" class="action-icon" title="Register Complaint">
+          <i class="fas fa-exclamation-triangle"></i>
+          <span>Complaint</span>
+        </a>
+
+        <!-- 3. Upload Meter -->
+        <a href="/DC/PB/meterReading" class="action-icon" title="Upload Meter Photo">
+          <i class="fas fa-camera"></i>
+          <span>Upload</span>
+        </a>
+
+        <!-- 4. Emergency -->
+        <a onclick="handleEmergencyClick()" class="action-icon" title="Emergency">
+          <i class="fas fa-bell"></i>
+          <span>Emergency</span>
+        </a>
+
+        <!-- 5. Logout -->
+        <a href="/DC/logoutBus" class="action-icon" title="Bus Logout">
+          <i class="fas fa-sign-out-alt"></i>
+          <span>Logout</span>
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+
+
+
+  <div class="col-md-6 grid-margin stretch-card">
+    <div class="card shadow-sm">
+      <div class="card-body text-center">
+        <h4 class="card-title mb-3">📈 ओडोमीटर अपडेट <%=bus.busNumber  %></h4>
+        <form id="odometerForm" class="d-flex justify-content-center flex-wrap gap-3" style="max-width: 400px; margin: auto;">
+          <input type="number" class="form-control form-control-lg" name="odometerReading" id="odometerReading" value="<%= bus.distanceTravelled %>" placeholder="🔢 उदाहरण: 128560" required>
+          <br><br>
+          <br>
+          <button type="submit" class="btn btn-outline-success btn-lg fw-bold">🔄 अपडेट करें</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+            <!-- SECOND ROW: Notices -->
+
+            
+        <!-- main-panel ends -->
+      </div>
+      </div>
+      <!-- page-body-wrapper ends -->
+    </div>
+    <!-- container-scroller -->
+    <!-- plugins:js -->
+    <script src="/assets/vendors/js/vendor.bundle.base.js"></script>
+    <!-- endinject -->
+    <!-- Plugin js for this page -->
+    <!-- End plugin js for this page -->
+    <!-- inject:js -->
+    <script src="/assets/js/off-canvas.js"></script>
+    <script src="/assets/js/hoverable-collapse.js"></script>
+    <script src="/assets/js/misc.js"></script>
+    <script src="/assets/js/settings.js"></script>
+    <script src="/assets/js/todolist.js"></script>
+
+  
+    
+    <script type="module" src="/foreground.js"></script>
+    <script src="/custom/speak.js"></script>
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+  <script>
+
+const user = <%- JSON.stringify(user) %>;
+const bus= <%- JSON.stringify(bus) %>;
+  document.addEventListener("DOMContentLoaded", async () => {
+    const form = document.getElementById("odometerForm");
+    const input = document.getElementById("odometerReading");
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault(); // ✅ prevents page refresh
+
+      const reading = input.value;
+
+      document.getElementById("loader").style.display = "flex";
+
+      try {
+        const response = await fetch("/DC/PB/odometer", {
+          method: "POST",
+          credentials: "include", // 👈 Important to send cookies
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ odometerReading: reading}),
+        });
+
+        const result= await response.json()
+        document.getElementById("loader").style.display = "none";
+        document.getElementById("odoReading").innerText=`दूरी तय की गई : ${reading} कि.मी.`
+        let  message = result.message.slice(2); // pehle ke 2 character (🔇) hata do
+        safeSpeakHindi(message)
+        alert(result.message)
+     
+      
+      } catch (error) {
+        document.getElementById("loader").style.display = "none";
+        console.error(error);
+        if (
+  error.message.includes("Unexpected token '<'") ||
+  error.message.includes("position 0") // Firefox/Edge sometimes
+) {
+  window.location.href = "/DC";
+  return;
+}
+       
+        document.getElementById("loader").style.display = "none";
+        alert("❌ Server or network error.");
+        safeSpeakHindi("Server or network error.");
+      }
+    });
+  });
+
+  // haldine emeregency
+
+  
+  function handleEmergencyClick() {
+
+safeSpeakHindi("क्या आप वाकई आपातकालीन सूचना भेजना चाहते हैं ");
+const confirmEmergency = confirm(`⚠️ क्या आप वाकई आपातकालीन सूचना भेजना चाहते हैं? ${bus.busNumber}`);
+
+if (!confirmEmergency) {
+safeSpeakHindi("आपातकालीन कार्रवाई रद्द कर दी गई है।");
+alert("❌ आपातकालीन कार्रवाई रद्द कर दी गई है।");
+return;
+}
+
+// 📦 Optional: आप चाहें तो ड्राइवर/बस की जानकारी यहाँ जोड़ सकते हैं
+const emergencyData = {
+timestamp: new Date().toISOString(),
+
+
+
+};
+
+// 🚀 Server को सूचना भेजना
+document.getElementById("loader").style.display = "flex";
+
+
+
+fetch('/DC/PB/emergencyAlert', {
+  method: 'POST',
+  credentials: "include", // 👈 Important to send cookies like auth token
+  headers: {
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify(emergencyData)
+})
+.then(async (response) => {
+  const text = await response.text(); // Read response as plain text
+
+  // 🔍 Detect if server redirected to login or sent HTML
+  if (text.includes("<!DOCTYPE html>") || text.includes("<html")) {
+    window.location.href = "/DC";
+    return;
+  }
+
+  // ✅ Try parsing JSON safely
+  let data;
+  try {
+    data = JSON.parse(text);
+  } catch (err) {
+    console.error("❌ JSON parse error:", err);
+    alert("❌ Unexpected response from server.");
+    return;
+  }
+
+  // 🎯 Check response status
+  if (response.ok) {
+    document.getElementById("loader").style.display = "none";
+    safeSpeakHindi("सूचना भेज दी गई है। प्रशासन जल्द ही संपर्क करेगा।");
+    alert("✅ सूचना भेज दी गई है। प्रशासन जल्द ही संपर्क करेगा।");
+  } else {
+    console.error("❌ Server responded with an error:", data);
+    alert("❌ कुछ गलत हुआ। कृपया पुनः प्रयास करें।");
+  }
+})
+.catch((error) => {
+  document.getElementById("loader").style.display = "none";
+
+  if (
+    error.message.includes("Unexpected token '<'") ||
+    error.message.includes("position 0")
+  ) {
+    window.location.href = "/DC";
+    return;
+  }
+
+  console.error("❌ नेटवर्क त्रुटि:", error);
+  safeSpeakHindi("सूचना भेजने में समस्या आई। कृपया पुनः प्रयास करें।");
+  alert("❌ सूचना भेजने में समस्या आई। कृपया पुनः प्रयास करें।");
+});
+
+  }
+
+  window.onload = function () {
+    document.getElementById("loader").style.display = "none";
+  };
+
+
+  document.querySelectorAll('.collapsible-header').forEach(header => {
+    header.addEventListener('click', () => {
+      const content = header.nextElementSibling;
+      content.classList.toggle('open');
+    });
+  });
+
+
+
+  
+ 
+  
+   
+  
+
+  
+  
+  
+  </script>
+
+  <script>
+
+
+  </script>
+
+
+
+
+ 
+
+
+
+  </body>
+</html>

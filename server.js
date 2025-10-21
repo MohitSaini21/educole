@@ -1,21 +1,27 @@
 // Importing Required Modules
 import express from "express";
+import newsaveLogs from "./utils/newSaveLogs.js";
+import cron from "node-cron";
 
 import { config } from "dotenv"; // For environment variable management
 import { logStopArrivalToMemory } from "./utils/logsMemory.js";
+
+import Redlock from "redlock";
 
 import FCM from "./model/FCM.js";
 import { dcRouter } from "./routes/DC.js";
 import { getAllStopsForBus } from "./utils/reachedStops.js";
 
+import Driver from "./model/driver.js";
+import Conductor from "./model/conductor.js";
 import CORE from "./model/admin.js";
 import client from "./redis-client.js";
-
+import { pubClient, subClient } from "./redis-client.js";
 import { sendNotificationToClient } from "./utils/notify.js";
 
 import { setAllRouteStops } from "./utils/busRouteStops.js";
 import { getBusCacheData } from "./utils/busRouteStops.js";
-
+import { createAdapter } from "@socket.io/redis-adapter";
 import jwt from "jsonwebtoken";
 
 import { administratorRouter } from "./routes/administrator.js";
@@ -32,7 +38,7 @@ import moment from "moment-timezone";
 import cookieParser from "cookie-parser";
 
 import { ConnectDB } from "./config/db.js";
-// Handler if user want's to communicate over webScoket protocols
+
 import { Server } from "socket.io";
 import Bus from "./model/bus.js";
 
@@ -105,11 +111,21 @@ app.use(
   dcRouter
 );
 
+// ✅ GLOBAL error handler (MUST be after all routes)
+app.use((err, req, res, next) => {
+  if (err instanceof URIError) {
+    return res.status(400).json({ error: "Malformed URL parameter" });
+  }
+  next(err);
+});
+
 const io = new Server(server, {
   pingInterval: 5000, // every 5s send ping
   pingTimeout: 3000, // wait 3s for pong before dropping
 });
 
+// Attach Redis adapter
+io.adapter(createAdapter(pubClient, subClient));
 app.set("io", io); // <-- shared shelf mein rakh diy
 
 io.use((socket, next) => {
@@ -141,6 +157,7 @@ io.use((socket, next) => {
       socket.administratorId = decoded.id;
     } else if (query.liveBusId) {
       socket.liveBusId = query.liveBusId;
+      socket.worker = decoded.id;
     }
 
     return next();
@@ -171,9 +188,6 @@ async function removeSocketFromRedis(distinctName, key, socket, label) {
     console.log(`❌ Removed socket ${socket.id} from ${label} for ${key}.`);
   }
 }
-
-// Prevent any connection in first 5s after a disconnect for same busId
-const cooldowns = new Map();
 
 io.on("connection", async (socket) => {
   const query = socket.handshake.query;
@@ -239,31 +253,19 @@ io.on("connection", async (socket) => {
   } else if (socket.liveBusId) {
     const busId = socket.liveBusId.toString();
 
-    const now = Date.now();
-
-    if (cooldowns.has(busId) && now - cooldowns.get(busId) < 3000) {
-      console.log(`⏳ Rejecting ${busId} — still in cooldown`);
-
-      socket.disconnect(true);
-      return;
-    }
-
     let exists = await client.sIsMember("liveBuses", busId);
     if (exists) {
-      console.log(`liveBuses mai abhi bhi busId hai ...........`);
+      console.log(`let All process drop previous connectin first`);
       socket.disconnect(true);
       return;
     }
 
     await client.sAdd("liveBuses", busId);
+    const key = `lastEvaluated:${busId}:drived`;
+    await client.sAdd(key, socket.worker);
 
-    // registerSocket(busSocketsIds, busId, socket, "New Driver Connections");
-    registerSocketOnRedis(
-      "busSocketsIds",
-      busId,
-      socket,
-      "New Driver Connections"
-    );
+    await client.set(`busSocketsId:${busId}`, socket.id);
+    await client.hSet("lastDrived", busId.toString(), socket.worker);
 
     console.log(`🟢 Bus ${busId} is now live with socket ${socket.id}`);
 
@@ -316,6 +318,105 @@ io.on("connection", async (socket) => {
     }
   });
 
+  // TrackBehind
+  // Inside io.on("connection", (socket) => { ... })
+  socket.on("trackBehind", async (data, callback) => {
+    const { busId } = data;
+    const key = `busSocketsId:${busId}`;
+
+    try {
+      // 1. Get socket ID from Redis
+      const socketId = await client.get(key);
+
+      if (!socketId) {
+        return callback("Bus is offline (no socket ID found).");
+      }
+
+      // 2. Check if socket is still connected
+      const targetSocket = io.sockets.sockets.get(socketId);
+      if (!targetSocket || targetSocket.disconnected) {
+        return callback("Bus is offline (socket disconnected).");
+      }
+
+      // 3. Emit event and wait for response with timeout
+      const result = await new Promise((resolve, reject) => {
+        let isResolved = false;
+
+        try {
+          targetSocket.emit("check", "testing string", (response) => {
+            if (!isResolved) {
+              isResolved = true;
+              resolve(response); // Client responded
+            }
+          });
+
+          // Timeout after 5 seconds
+          setTimeout(() => {
+            if (!isResolved) {
+              isResolved = true;
+              resolve("Bus did not respond in time (timeout).");
+            }
+          }, 5000);
+        } catch (emitError) {
+          reject(emitError); // Emit failed (rare)
+        }
+      });
+
+      callback(result);
+    } catch (error) {
+      console.error("Error in trackBehind handler:", error);
+      callback("Internal server error while handling trackBehind.");
+    }
+  });
+  socket.on("stopTrackBehind", async (data, callback) => {
+    const { busId } = data;
+    const key = `busSocketsId:${busId}`;
+
+    try {
+      // 1. Get socket ID from Redis
+      const socketId = await client.get(key);
+
+      if (!socketId) {
+        return callback("Bus is offline (no socket ID found).");
+      }
+
+      // 2. Check if socket is still connected
+      const targetSocket = io.sockets.sockets.get(socketId);
+      if (!targetSocket || targetSocket.disconnected) {
+        return callback("Bus is offline (socket disconnected).");
+      }
+
+      // 3. Emit event and wait for response with timeout
+      const result = await new Promise((resolve, reject) => {
+        let isResolved = false;
+
+        try {
+          targetSocket.emit("stopTrackBehind", "testing string", (response) => {
+            if (!isResolved) {
+              isResolved = true;
+              resolve(response); // Client responded
+            }
+          });
+
+          // Timeout after 5 seconds
+          setTimeout(() => {
+            if (!isResolved) {
+              isResolved = true;
+              resolve("Bus did not respond in time (timeout).");
+            }
+          }, 5000);
+        } catch (emitError) {
+          reject(emitError); // Emit failed (rare)
+        }
+      });
+
+      callback(result);
+    } catch (error) {
+      console.error("Error in trackBehind handler:", error);
+      callback("Internal server error while handling trackBehind.");
+    }
+  });
+
   // offer and icecandiate storegae
   // Redis Marked
   socket.on("driver-offer", async ({ bus, offer }) => {
@@ -354,6 +455,16 @@ io.on("connection", async (socket) => {
       console.log("✅ Offer and socketID saved for bus:", bus._id);
     } catch (err) {
       console.error("❌ Error handling driver-offer:", err);
+    }
+  });
+  socket.on("operatorSide", async ({ busId }) => {
+    const adcbSockets = await client.sMembers(
+      `administratorConnectionsBus:${busId}`
+    );
+    if (adcbSockets.length > 0) {
+      for (const socketId of adcbSockets) {
+        io.to(socketId).emit("operatorSide", busId);
+      }
     }
   });
   //  Redis Marked
@@ -489,7 +600,7 @@ io.on("connection", async (socket) => {
       });
 
       // Clean up Redis entries for this bus
-      await client.hSet(key, "offer", null); // clear offer
+      await client.hDel(key, "offer");
       await client.del(`peers:${busId}:candidates`); // remove ICE candidates list
 
       console.log(
@@ -501,23 +612,23 @@ io.on("connection", async (socket) => {
   });
 
   // About pTracking
-  socket.on("getObject", async (data, callback) => {
-    try {
-      const busId = data.busId;
+  // socket.on("getObject", async (data, callback) => {
+  //   try {
+  //     const busId = data.busId;
 
-      // Simulate fetching the bus object from a database
-      const busObject = lastEvaluated[busId]; // Use your DB model here
+  //     // Simulate fetching the bus object from a database
+  //     const busObject = lastEvaluated[busId]; // Use your DB model here
 
-      if (busObject) {
-        callback({ data: busObject }); // Send the object back to the client
-      } else {
-        callback({ data: null }); // Let the client know no data was found
-      }
-    } catch (error) {
-      console.error("Error fetching bus object:", error);
-      callback({ data: null, error: "Server error" });
-    }
-  });
+  //     if (busObject) {
+  //       callback({ data: busObject }); // Send the object back to the client
+  //     } else {
+  //       callback({ data: null }); // Let the client know no data was found
+  //     }
+  //   } catch (error) {
+  //     console.error("Error fetching bus object:", error);
+  //     callback({ data: null, error: "Server error" });
+  //   }
+  // });
 
   socket.on("lastLocation", async (busId, callback) => {
     let exists = await client.sIsMember("liveBuses", busId.toString());
@@ -533,7 +644,43 @@ io.on("connection", async (socket) => {
       }
     }
   });
+  socket.on("lastDrived", async (data, callback) => {
+    try {
+      console.log("Server received 'lastDrived' event:", data);
 
+      const { busId } = data;
+
+      // 🧠 Fetch workerId from Redis
+      const workerId = await client.hGet("lastDrived", busId);
+      console.log("Redis returned workerId:", workerId);
+
+      if (!workerId) {
+        console.log("No workerId found for bus:", busId);
+        callback(null);
+        return;
+      }
+
+      // 🧠 Try finding the driver first
+      let worker = await Driver.findOne({ driverId: workerId });
+
+      if (!worker) {
+        // If not found as driver, try finding as conductor
+        worker = await Conductor.findOne({ conductorId: workerId });
+      }
+
+      if (!worker) {
+        console.log("No worker found in MongoDB for ID:", workerId);
+        callback(null);
+        return;
+      }
+
+      console.log("Worker found:", worker);
+      callback(worker);
+    } catch (error) {
+      console.error("Error in 'lastDrived' event:", error);
+      callback(null);
+    }
+  });
   socket.on("lastLocationOfAllBuses", async (callback) => {
     try {
       const exists = await client.exists("lastLocation");
@@ -1051,13 +1198,8 @@ io.on("connection", async (socket) => {
     // 🚌 Live Bus (driver/conductor)
     if (socket.liveBusId) {
       const busId = socket.liveBusId;
-      cooldowns.set(busId, Date.now());
-      removeSocketFromRedis(
-        "busSocketsIds",
-        busId.toString(),
-        socket,
-        "Driver Connection"
-      );
+
+      await client.del(`busSocketsId:${busId}`);
 
       let removeCount = await client.sRem("liveBuses", busId);
       if (removeCount) {
@@ -1136,5 +1278,158 @@ const startServer = async () => {
   }
 };
 
-
 startServer();
+
+async function getAllBusObjectIds() {
+  try {
+    const buses = await Bus.find({}, "_id"); // fetch only _id fields
+    const busIds = buses.map((bus) => bus._id.toString());
+    return busIds;
+  } catch (error) {
+    console.error("Failed to fetch bus _ids:", error);
+    throw error;
+  }
+}
+
+async function deleteKeysByPrefixSimple(prefix) {
+  try {
+    const keys = await client.keys(`${prefix}*`);
+    if (keys.length) {
+      for (let key of keys) {
+        await client.del(key);
+        console.log(`${key} has been deleted from Redis Database`);
+      }
+    } else {
+      console.log("No keys found to delete.");
+    }
+  } catch (err) {
+    console.error("❌ Redis delete error:", err);
+  }
+}
+
+const lockTTL = 12 * 60 * 1000; // 12 minutes
+
+const redlock = new Redlock([client], {
+  retryCount: 0, // Don’t retry if lock is taken
+});
+
+// cron.schedule(
+//   "0 0 * * *", // Every day at 12:00 AM IST
+//   async () => {
+//     const nowIST = moment().tz("Asia/Kolkata");
+//     console.log(
+//       `⏰ Cron triggered at (IST): ${nowIST.format("YYYY-MM-DD HH:mm:ss")}`
+//     );
+
+//     // 🔐 Try to acquire lock
+//     let lock;
+//     try {
+//       lock = await redlock.acquire(["locks:daily-bus-cron"], lockTTL);
+//       console.log("✅ Acquired lock. Running cron job...");
+//     } catch (err) {
+//       console.log("⏭️ Skipping cron — another instance is already running it.");
+//       return; // Skip job
+//     }
+
+//     try {
+//       const busIds = await getAllBusObjectIds();
+
+//       for (const busId of busIds) {
+//         try {
+//           let busObject = {};
+
+//           const distanceCovered = await client.get(
+//             `lastEvaluated:${busId}:distanceCovered`
+//           );
+//           if (distanceCovered) busObject.distanceCovered = distanceCovered;
+
+//           let eventTimeline = await client.lRange(
+//             `lastEvaluated:${busId}:eventTimeline`,
+//             0,
+//             -1
+//           );
+//           eventTimeline = eventTimeline
+//             .map((str) => {
+//               try {
+//                 return JSON.parse(str);
+//               } catch {
+//                 return null;
+//               }
+//             })
+//             .filter((item) => item !== null);
+//           if (eventTimeline.length) busObject.eventTimeline = eventTimeline;
+
+//           let reachedStops = await getAllStopsForBus(busId);
+//           if (reachedStops && Object.keys(reachedStops).length > 0) {
+//             busObject.reachedStops = reachedStops;
+//           }
+
+//           let path = await client.lRange(`lastEvaluated:${busId}:path`, 0, -1);
+//           path = path
+//             .map((str) => {
+//               try {
+//                 return JSON.parse(str);
+//               } catch {
+//                 return null;
+//               }
+//             })
+//             .filter((item) => item !== null);
+//           if (path.length) busObject.path = path;
+
+//           const members = await client.sMembers(
+//             `lastEvaluated:${busId}:drived`
+//           );
+//           if (members.length) busObject.whoDrived = members;
+
+//           if (Object.keys(busObject).length > 0) {
+//             busObject.busId = busId;
+//             await newsaveLogs(busObject);
+//           }
+
+//           const prefix = `lastEvaluated:${busId}`;
+//           await deleteKeysByPrefixSimple(prefix);
+//         } catch (err) {
+//           console.error(`❌ Error processing busId ${busId}:`, err);
+//         }
+//       }
+
+//       console.log("🧹 Cleared all entries from lastEvaluated");
+
+//       const cutoffDate = nowIST
+//         .clone()
+//         .subtract(10, "day")
+//         .format("YYYY-MM-DD");
+//       console.log(`🧾 Deleting logs older than: ${cutoffDate}`);
+
+//       const oldLogs = await BusActivityLog.find({
+//         logDate: { $lt: cutoffDate },
+//       });
+
+//       for (const log of oldLogs) {
+//         if (log.morningSnap?.image) {
+//           deleteFileIfExists(log.morningSnap.image, "Morning Snap");
+//         }
+//         if (log.eveningSnap?.image) {
+//           deleteFileIfExists(log.eveningSnap.image, "Evening Snap");
+//         }
+//         await log.deleteOne();
+//         console.log(`✅ Deleted log ID: ${log._id} (logDate: ${log.logDate})`);
+//       }
+
+//       console.log("🧹 Old logs cleanup complete.");
+//     } catch (err) {
+//       console.error("❌ Error in main cron job:", err);
+//     } finally {
+//       // 🔓 Release lock
+//       try {
+//         await lock.release();
+//         console.log("🔓 Lock released after job completion.");
+//       } catch (releaseErr) {
+//         console.error("⚠️ Failed to release lock:", releaseErr);
+//       }
+//     }
+//   },
+//   {
+//     timezone: "Asia/Kolkata",
+//   }
+// );

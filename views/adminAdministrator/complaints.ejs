@@ -154,10 +154,15 @@
                                 <p class="mb-2">🚌 <strong>Bus Number:</strong> <%= complaint.busNumber %></p>
                               <% } %>
                       
+                              <% if (complaint.submittedWho) { %>
+             <p class="mb-2">🚌 <strong>Submitted By:</strong> <%= complaint.submittedWho %>   (<%= complaint.phone %>)</p>
+                         
+                              <% } %>
+                      
                               <!-- Submitted At -->
                               <% if (complaint.createdAt) { %>
                                 <p class="mb-2">
-                                  🗓️ <strong>Submitted At:</strong><br>
+                                  🗓️ <strong>Submitted At:</strong><br> 
                                   <%= new Date(complaint.createdAt).toLocaleString("en-IN", {
                                     day: "2-digit",
                                     month: "short",

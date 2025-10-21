@@ -1,3 +1,5 @@
+<% const isBusLogged = typeof busLogged !== 'undefined' && busLogged === true;
+%>
 <nav class="sidebar sidebar-offcanvas" id="sidebar">
   <ul class="nav">
     <!-- प्रोफाइल सेक्शन -->
@@ -19,9 +21,11 @@
         </div>
 
         <!-- प्रोफाइल सेटिंग -->
+
         <a href="#" id="profile-dropdown" data-toggle="dropdown">
           <i class="mdi mdi-dots-vertical"></i>
         </a>
+
         <div
           class="dropdown-menu dropdown-menu-right sidebar-dropdown preview-list"
           aria-labelledby="profile-dropdown"
@@ -69,14 +73,6 @@
     </li>
 
     <!-- शिकायत दर्ज करें -->
-    <li class="nav-item menu-items">
-      <a class="nav-link" href="/DC/registerComplain">
-        <span class="menu-icon">
-          <i class="mdi mdi-playlist-play"></i>
-        </span>
-        <span class="menu-title">शिकायत दर्ज करें</span>
-      </a>
-    </li>
 
     <!-- आपकी शिकायतें -->
     <li class="nav-item menu-items">
@@ -85,16 +81,6 @@
           <i class="mdi mdi-playlist-play"></i>
         </span>
         <span class="menu-title">आपकी शिकायतें</span>
-      </a>
-    </li>
-
-    <!-- मीटर रीडिंग अपलोड करें -->
-    <li class="nav-item menu-items">
-      <a class="nav-link" href="/DC/meterReading">
-        <span class="menu-icon">
-          <i class="mdi mdi-speedometer"></i>
-        </span>
-        <span class="menu-title">मीटर रीडिंग अपलोड करें</span>
       </a>
     </li>
 

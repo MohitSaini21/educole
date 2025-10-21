@@ -67,6 +67,25 @@ const busSchema = new mongoose.Schema(
     qrPath: {
       type: String,
     },
+    MeterUpdated: [
+      {
+        userId: {
+          type: mongoose.Schema.Types.ObjectId,
+          required: true,
+        },
+
+        role: {
+          type: String,
+          enum: ["driver", "conductor"], // Valid model types
+          required: true,
+        },
+        updatedAt: {
+          type: Date,
+          default: Date.now,
+        },
+      },
+    ],
+
     busImages: {
       type: [String], // This ensures it's an array of strings (for image paths/URLs)
       default: [], // Default is an empty array
@@ -89,6 +108,7 @@ const busSchema = new mongoose.Schema(
       min: 0, // Distance shouldn't be negative
       default: 0, // Good practice to set default
     },
+
     averageSpeed: {
       type: Number,
       min: 0, // Distance shouldn't be negative

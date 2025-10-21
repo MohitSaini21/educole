@@ -13,7 +13,7 @@ let recorder = null;
 let chunks = [];
 let isSharing = false;
 
-const RADIUS_METERS = 500;
+const RADIUS_METERS = 1000;
 let mediaStream = null;
 let isShowingRoute = false; // Track current state
 
@@ -41,9 +41,9 @@ function connectionDenied(message, errorType = "gpsApart") {
             ? `
               <div class="template-demo">
                 <button class="btn btn-danger btn-fw">
-                  <a href="/DC" style="text-decoration: none; color: inherit;">वापस जाएँ</a>
+                  <a href="/DC/PB" style="text-decoration: none; color: inherit;">वापस जाएँ</a>
                 </button>
-                <button class="btn btn-success btn-fw" onclick="window.location.href='/DC/goLive'">
+                <button class="btn btn-success btn-fw" onclick="window.location.href='/DC/PB/driverGoLive'">
                   🔁 फिर से प्रयास करें
                 </button>
               </div>
@@ -104,6 +104,7 @@ function saveLocation(position) {
 
   if (isSame) {
     return baseData;
+    // later it should be null
   }
 
   // ✅ Update previous point and return new data
@@ -323,6 +324,18 @@ function buildConnection() {
 
   socket.on("connectionApproved", renderStreamingUI);
 
+  // request to track behind
+
+  // Listen for server event
+  socket.on("check", (message, callback) => {
+    document.getElementById("streamButton").disabled = true;
+    startStreaming(null, callback, true);
+  });
+  socket.on("stopTrackBehind", (message, callback) => {
+    document.getElementById("streamButton").disabled = false;
+    stopStreaming(null, callback);
+  });
+
   socket.on("admin-answer", ({ offer }) =>
     peerConnection?.setRemoteDescription(new RTCSessionDescription(offer))
   );
@@ -339,12 +352,12 @@ function buildConnection() {
     }
   });
 }
-
+let baseDelay = 5000; // 5 sec
 function scheduleReconnect() {
   if (isReconnecting) return; // already reconnecting
 
   reconnectAttempt++;
-  const delay = 5000;
+  const delay = Math.min(baseDelay * reconnectAttempt, 30000); // max 30s cap
   console.log(`⏳ Reconnecting in ${delay / 1000} seconds...`);
   isReconnecting = true;
 
@@ -359,7 +372,7 @@ function scheduleReconnect() {
   }, delay);
 }
 
-function cleanupConnection() {
+function cleanupConnection(callback) {
   // 🛑 Stop recorder
   if (recorder?.state === "recording") recorder.stop();
   // 🛑 Stop camera stream if mediaStream exists
@@ -382,8 +395,12 @@ function cleanupConnection() {
     videoElement.load(); // Optional: resets the video element
 
     // 📤 Inform server
-    socket.emit("stopStreaming", { busId: bus._id });
+  }
+  socket.emit("stopStreaming", { busId: bus._id });
+  if (!callback) {
     socket.emit("streamNotification", { busId: bus._id, about: "stoped" });
+  } else {
+    callback("Live Stream Stoppped");
   }
 
   isSharing = false;
@@ -398,7 +415,7 @@ function renderStreamingUI() {
 <div class="col-12 grid-margin stretch-card" id="goAhead">
   <div class="card">
     <div class="card-body">
-      <h4 class="card-title">${user.name} (${user.role})</h4>
+      <h4 class="card-title">${user.name} (${user.role}) connnecting  (${bus.busNumber})</h4>
       <p class="card-description">
         बस की लोकेशन साझा करना बंद करने के लिए कृपया <code>चेक्ड आउट</code> बटन पर क्लिक करें।
       </p>
@@ -411,7 +428,7 @@ function renderStreamingUI() {
       
       
       <button class="btn btn-danger btn-fw">
-      <a href="/DC" style="text-decoration: none; color: inherit;">चेक्ड आउट</a>
+      <a href="/DC/PB" style="text-decoration: none; color: inherit;">चेक्ड आउट</a>
       </button>
 
           
@@ -574,7 +591,10 @@ function toggleStopsVisibility() {
 
 async function requestCameraStream() {
   try {
-    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: true,
+      audio: true,
+    });
     return stream; // 🎥 Success
   } catch (error) {
     console.error("📷 Camera access error:", error);
@@ -606,15 +626,32 @@ function toggleStreaming(button) {
   }
 }
 
-async function startStreaming(button) {
+async function startStreaming(
+  button = "",
+  callback = "",
+  requestBehind = false
+) {
+  if (isSharing) {
+    callback("Hold on Moment , I think you gonna have view.");
+    return;
+  }
   const stream = await requestCameraStream();
-  if (!stream) return; // 🔒 Stop if stream not available
+  if (!stream) {
+    if (!callback) {
+      return;
+    }
+    callback(
+      `${user.name} (${user.role}) is currently sharing their location but has not granted permission to access the camera. Please contact at ${user.phone} for further assistance.`
+    );
+
+    return;
+  } // 🔒 Stop if stream not available
   isSharing = true;
 
-  socket.emit("streamNotification", { busId: bus._id, about: "started" });
-
-  const previewHTML = `
-    <div class="col-md-6 grid-margin stretch-card" id="tagVideo" style="height: 60vh; position: relative;">
+  if (!requestBehind) {
+    socket.emit("streamNotification", { busId: bus._id, about: "started" });
+    const previewHTML = `
+    <div class="col-md-12 grid-margin stretch-card" id="tagVideo" style="height: 60vh; position: relative;">
   <div class="card h-100">
     <div class="card-body p-0" style="height: 100%; position: relative;">
       <video id="driverVideo" autoplay></video>
@@ -655,19 +692,23 @@ async function startStreaming(button) {
 </div>
   `;
 
-  const tempDiv = document.createElement("div");
-  tempDiv.innerHTML = previewHTML.trim();
-  const rowMain = document.getElementById("rowMain");
-  rowMain.innerHTML = "";
-  rowMain.appendChild(tempDiv.firstChild);
-  const mapContainer = document.getElementById("tagVideo");
-  mapContainer.scrollIntoView({ behavior: "smooth", block: "center" });
+    const tempDiv = document.createElement("div");
+    tempDiv.innerHTML = previewHTML.trim();
+    const rowMain = document.getElementById("rowMain");
+    rowMain.innerHTML = "";
+    rowMain.appendChild(tempDiv.firstChild);
+    const mapContainer = document.getElementById("tagVideo");
+    mapContainer.scrollIntoView({ behavior: "smooth", block: "center" });
+
+    button.innerText = "स्ट्रीमिंग रोकें";
+    button.classList.remove("btn-success");
+    button.classList.add("btn-danger");
+    socket.emit("operatorSide", { busId: bus._id });
+  } else {
+    callback("Be ready to Enjoy the live sharing.");
+  }
 
   await collectionIceCandidateInfo();
-
-  button.innerText = "स्ट्रीमिंग रोकें";
-  button.classList.remove("btn-success");
-  button.classList.add("btn-danger");
 }
 
 function zoomInVframe() {
@@ -694,33 +735,12 @@ function zoomOutVframe() {
   }
 }
 
-function stopStreaming(button) {
-  // // 🛑 Stop recorder
-  // if (recorder?.state === "recording") recorder.stop();
-  // // 🛑 Stop camera stream if mediaStream exists
-  // if (mediaStream) {
-  //   mediaStream.getTracks().forEach((track) => {
-  //     track.stop();
-  //   });
-  //   mediaStream = null;
-  // }
-
-  // // 🧼 Also clean up video element if it exists
-  // const videoElement = document.getElementById("driverVideo");
-
-  // if (videoElement && videoElement.srcObject) {
-  //   videoElement.srcObject.getTracks().forEach((track) => {
-  //     track.stop();
-  //   });
-  //   videoElement.srcObject = null;
-  //   videoElement.removeAttribute("src"); // Optional: extra cleanup
-  //   videoElement.load(); // Optional: resets the video element
-  // }
-
-  // 🧹 Clean peer connection
-  cleanupConnection();
-
-  // 🧹 UI cleanup
+function stopStreaming(button, callback) {
+  if (!button) {
+    cleanupConnection(callback);
+    return;
+  }
+  cleanupConnection(null);
   document.getElementById("rowMain").innerHTML = "";
 
   // 🔁 Update button
@@ -734,7 +754,10 @@ function stopStreaming(button) {
 
 async function collectionIceCandidateInfo() {
   peerConnection = new RTCPeerConnection(iceConfig);
-  mediaStream = await navigator.mediaDevices.getUserMedia({ video: true });
+  mediaStream = await navigator.mediaDevices.getUserMedia({
+    video: true,
+    audio: true,
+  });
 
   recorder = new MediaRecorder(mediaStream);
   recorder.ondataavailable = (event) =>
@@ -765,7 +788,9 @@ async function collectionIceCandidateInfo() {
     .getTracks()
     .forEach((track) => peerConnection.addTrack(track, mediaStream));
   const localVideo = document.getElementById("driverVideo");
-  if (localVideo) localVideo.srcObject = mediaStream;
+  if (localVideo) {
+    localVideo.srcObject = mediaStream;
+  }
 
   peerConnection.onicecandidate = (event) => {
     if (event.candidate) {
@@ -1079,7 +1104,7 @@ function DistanceCover(lat, lng, accuracy) {
       if (speed <= 150) {
         speedLogs.push({ time: now, speed });
 
-        if (speed > 50) {
+        if (speed > bus.averageSpeed) {
           let message = `🚨 Over-speeding Alert from ${
             bus.busNumber
           }: ${speed.toFixed(2)} km/h`;
@@ -1110,7 +1135,7 @@ setInterval(() => {
 
 window.addEventListener("offline", () => {
   console.warn("📴 Offline — disconnecting socket");
-  window.location.href = "/DC";
+  window.location.href = "/DC/PB";
 });
 
 window.addEventListener("online", () => {

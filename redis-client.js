@@ -1,9 +1,13 @@
 import { createClient } from "redis";
 
-// Create the Redis client
+// Create the main Redis client
 const client = createClient();
 
-// Event listeners for Redis client
+// Adapter clients for Socket.IO Redis adapter
+export const pubClient = client.duplicate();
+export const subClient = client.duplicate();
+
+// Event listeners for main client
 client.on("connect", () => {
   console.log("✅ Connected to Redis");
 });
@@ -12,15 +16,21 @@ client.on("error", (err) => {
   console.error("❌ Redis Client Error:", err);
 });
 
-// Connect to Redis and flush all data on startup
+// Connect to Redis and optionally flush all data on startup
 const startRedisClient = async () => {
   try {
-    // Connect to Redis
-    await client.connect();
+    // Connect all clients
+    await Promise.all([
+      client.connect(),
+      pubClient.connect(),
+      subClient.connect(),
+    ]);
 
-    // Flush all data from Redis whenever the server starts
+    // ⚠️ Only flush if you really need to clear Redis on startup
     await client.flushAll();
     console.log("✅ Redis flushed on server start.");
+
+    console.log("✅ Redis clients connected successfully");
   } catch (err) {
     console.error("❌ Error during Redis initialization:", err);
   }
@@ -29,14 +39,22 @@ const startRedisClient = async () => {
 // Call startRedisClient function
 startRedisClient();
 
-// Handle process termination gracefully to flush Redis on shutdown
+// Handle process termination gracefully
 process.on("SIGINT", async () => {
-  console.log("🚨 Server shutting down. Flushing Redis...");
-  await client.flushAll(); // Flush Redis one more time on server shutdown
-  await client.quit(); // Properly close the Redis connection
-  console.log("✅ Redis flushed and client disconnected.");
-  process.exit(0); // Exit the process after cleanup
+  try {
+    console.log("🚨 Server shutting down. Closing Redis connections...");
+    // ⚠️ Flush only if necessary
+    // await client.flushAll();
+
+    await Promise.all([client.quit(), pubClient.quit(), subClient.quit()]);
+
+    console.log("✅ Redis clients disconnected cleanly.");
+    process.exit(0);
+  } catch (err) {
+    console.error("❌ Error during Redis shutdown:", err);
+    process.exit(1);
+  }
 });
 
-// Export the client for use in other parts of your application
+// Export the main client for other app modules
 export default client;

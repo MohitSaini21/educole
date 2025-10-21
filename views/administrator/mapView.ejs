@@ -753,14 +753,198 @@ function getBusPopupHTML(busData, timestamp, accuracy) {
       <div class="accuracy-updated">
         Accuracy: ±${Math.round(accuracy)} meters
       </div>
+      <br>
+
+    <button onclick="worker('${busData._id}')">Who is driving?</button>
+    </div>
+  `;
+}
+
+ async function worker(busId) {
+    console.log("Worker function has been called");
+
+    socket.emit("lastDrived", { busId }, (worker) => {
+      console.log("Callback from server received:", worker);
+
+      if (worker) {
+ 
+        
+        let html=getWorkerPopupHTML(worker,busId)
+        updateBusPopup(busId,html)
+        
+      } else {
+       const errorHTML = `
+    <div style="width: 250px; color: red;">
+      No worker present in database. Please contact the developer.
+    </div>
+  `;
+
+ 
+  
+
+
+         updateBusPopup(busId,html)
+        alert("No worker present in database. Please contact the developer.");
+      }
+    });
+  }
+
+
+
+function getWorkerPopupHTML(worker, busId) {
+  return `
+    <style>
+      .leaflet-popup-content { margin: 0 !important; }
+      .worker-card {
+        font-family: "Segoe UI", sans-serif;
+        background: linear-gradient(145deg, #ffffff, #f9fafc);
+        border-radius: 14px;
+        box-shadow: 0 4px 14px rgba(0,0,0,0.1);
+        padding: 18px;
+        width: 360px;
+        color: #2c3e50;
+        border-top: 4px solid #3498db;
+      }
+      .worker-header {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        margin-bottom: 12px;
+      }
+      .worker-photo {
+        width: 70px;
+        height: 70px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 2px solid #3498db;
+      }
+      .worker-info {
+        flex: 1;
+      }
+      .worker-name {
+        font-size: 17px;
+        font-weight: 600;
+        color: #2c3e50;
+        margin-bottom: 2px;
+      }
+      .worker-role {
+        font-size: 13px;
+        font-weight: 500;
+        color: #777;
+        margin-bottom: 6px;
+        text-transform: uppercase;
+      }
+      .worker-phone {
+        font-size: 13px;
+        color: #555;
+      }
+      .divider {
+        height: 1px;
+        background: #eee;
+        margin: 10px 0;
+      }
+      .worker-details {
+        font-size: 13px;
+        color: #555;
+        line-height: 1.5;
+        margin-bottom: 4px;
+      }
+      .worker-details span {
+        font-weight: 600;
+        color: #333;
+      }
+      .actions {
+        text-align: center;
+        margin-top: 14px;
+      }
+      .action-btn {
+        margin: 4px;
+        padding: 7px 12px;
+        border-radius: 6px;
+        font-size: 13px;
+        text-decoration: none;
+        display: inline-block;
+        transition: 0.2s;
+      }
+      .call-btn { background: #3498db; color: white; }
+      .call-btn:hover { background: #2980b9; }
+      .track-btn { background: #2ecc71; color: white; }
+      .track-btn:hover { background: #27ae60; }
+      .toggle-btn { background: #e67e22; color: white; }
+      .toggle-btn:hover { background: #d35400; }
+    </style>
+
+    <div class="worker-card">
+      <div class="worker-header">
+        <img src="${worker.profilePhoto || 'default-worker.jpg'}" alt="Worker Photo" class="worker-photo">
+        <div class="worker-info">
+          <div class="worker-name">${worker.name || "N/A"}</div>
+          <div class="worker-role">${worker.role ? worker.role.toUpperCase() : "N/A"}</div>
+          <div class="worker-phone">📞 ${worker.phone || "N/A"}</div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="worker-details"><span>Address:</span> ${worker.address || "N/A"}</div>
+      <div class="worker-details"><span>Joined:</span> ${worker.joiningDate ? new Date(worker.joiningDate).toLocaleDateString() : "N/A"}</div>
+      <div class="worker-details"><span>Status:</span> ${worker.status || "N/A"}</div>
+
+      <div class="actions">
+        <a href="tel:${worker.phone || ''}" class="action-btn call-btn">📞 Call</a>
+        <a href="/admin/particularBusLive/${busId}" class="action-btn track-btn">📍 Track</a>
+        <button onclick="fixed('${busId}')" class="action-btn toggle-btn">🔄 Back to Bus Info</button>
+      </div>
     </div>
   `;
 }
 
 
+async function fixed(busId) {
+    const group = markerCache[busId];
+  if (!group) {
+    console.warn(`No group found for busId: ${busId}`);
+    return;
+  }
+
+  // A LayerGroup can contain multiple layers (marker, circle, etc.)
+  let marker;
+
+  group.eachLayer(layer => {
+    if (layer instanceof L.Marker) {
+      marker = layer;
+    }
+  });
+  if(marker){
+   marker.fire('click');
+  }
+
+}
 
 
+function updateBusPopup(busId, html) {
+  const group = markerCache[busId];
+  if (!group) {
+    console.warn(`No group found for busId: ${busId}`);
+    return;
+  }
 
+  // A LayerGroup can contain multiple layers (marker, circle, etc.)
+  let marker;
+
+  group.eachLayer(layer => {
+    if (layer instanceof L.Marker) {
+      marker = layer;
+    }
+  });
+
+  if (marker) {
+    marker.setPopupContent(html);
+    console.log(`✅ Popup updated for busId: ${busId}`);
+  } else {
+    console.warn(`❌ Marker not found inside group for busId: ${busId}`);
+  }
+}
 
 
 

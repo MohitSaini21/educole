@@ -176,7 +176,7 @@
 
 .controls button,
 .controls label {
-  background-color: #007bff;
+  background-color: #f1c40f;
   color: white;
   border: none;
   padding: 12px 18px;
@@ -191,7 +191,7 @@
 
 .controls button:hover,
 .controls label:hover {
-  background-color: #0056b3;
+  background-color: #f1c40f;
   transform: scale(1.1);
 }
 
@@ -289,6 +289,19 @@
   }
 }
 
+
+.btn-outline-bus {
+  color: #ffc107; /* Yellow */
+  border: 2px solid #ffc107;
+  background-color: transparent;
+}
+
+.btn-outline-bus:hover {
+  background-color: #ffc107;
+  color: black;
+  border-color: #ffc107;
+}
+
     </style>
     
     <link
@@ -315,239 +328,123 @@
         <!-- partial -->
         <div class="main-panel">
           <div class="content-wrapper">
-            <div class="row">
-           <!-- LEFT: Real-time Operations -->
-<div class="col-md-6 grid-margin stretch-card">
-  <div class="card shadow">
-    <div class="card-body text-center">
-      <h4 class="card-title mb-3">🔧 QR Code Scanner</h4>
-              <!-- let's  put here Image box and add the clietn-sdie fiel -->
- 
-
-      <div class="d-flex flex-column align-items-center" style="gap: 16px;">
-        <!-- 🟢 ROUND GO LIVE BUTTON -->
-       <!-- <a href="/DC/goLive" class="thumb-checkin" title="Check In / Go Live">
-
-
-  🚍
-  </a> -->
-
-  
-
-<!-- Camera preview -->
-<div id="reader" class="fade-in"></div>
-
-<!-- Controls -->
-<!-- Controls -->
-<div class="controls">
-  <button id="rearBtn" title="Use Rear Camera">
-    <i class="fas fa-camera-retro"></i>
-  </button>
-  <button id="frontBtn" title="Use Front Camera">
-    <i class="fas fa-camera"></i>
-  </button>
-  <label title="Upload QR Image">
-    <i class="fas fa-file-upload"></i>
-    <input type="file" id="file-input" accept="image/*" style="display:none;">
-  </label>
-</div>
-
-
-  
-  <div class="thumb-label">चेक इन</div>
-
-        <!-- 👤 PROFILE VIEW -->
-        <a href="/DC/profile" class="btn btn-outline-success btn-lg fw-bold w-100" style="max-width: 300px;">
-          👤 प्रोफ़ाइल देखें
-        </a>
-
-        <!-- 🚨 EMERGENCY -->
-        <button class="btn btn-outline-danger btn-lg fw-bold w-100" onclick="handleEmergencyClick()" style="max-width: 300px;">
-          🚨 आपातकालीन बटन
-        </button>
-
-        <!-- 🔓 LOGOUT -->
-        <button class="btn btn-danger btn-lg fw-bold w-100" onclick="Redirect()" style="max-width: 300px;">
-          🔓 लॉगआउट
-        </button>
-      </div>
-    </div>
-  </div>
-</div>
-
-
-
-
-
-  <div class="col-md-6 grid-margin stretch-card">
-    <div class="card shadow-sm">
-      <div class="card-body text-center">
-        <h4 class="card-title mb-3">📈 ओडोमीटर अपडेट</h4>
-        <form id="odometerForm" class="d-flex justify-content-center flex-wrap gap-3" style="max-width: 400px; margin: auto;">
-          <input type="number" class="form-control form-control-lg" name="odometerReading" id="odometerReading" value="<%= user.assignedBus.distanceTravelled %>" placeholder="🔢 उदाहरण: 128560" required>
-          <br><br>
-          <br>
-          <button type="submit" class="btn btn-outline-success btn-lg fw-bold">🔄 अपडेट करें</button>
-        </form>
-      </div>
-    </div>
-  </div>
-</div>
-            <!-- SECOND ROW: Notices -->
 <div class="row">
+  <!-- LEFT: Real-time Operations -->
+  <div class="col-md-6 grid-margin stretch-card">
+    <div class="card shadow">
+      <div class="card-body text-center">
+        <div class="d-flex flex-column align-items-center" style="gap: 16px;">
+          <% if (busLogged) { %>
+            <button class="btn btn-outline-bus btn-lg fw-bold w-100" onclick="handleLogInBus()" style="max-width: 300px;">
+         🚌 🚨 लॉग इन की गई बस देखें 🚌
+            </button>
+
+            
+            
+          <% } else { %>
+            <h4 class="card-title mb-3">🔧 Scan Bus QR Code</h4>
+
+            <!-- Camera preview -->
+            <div id="reader" class="fade-in"></div>
+
+            <!-- Controls -->
+            <div class="controls">
+              <button id="rearBtn" title="Use Rear Camera">
+                <i class="fas fa-camera-retro"></i>
+              </button>
+              <button id="frontBtn" title="Use Front Camera">
+                <i class="fas fa-camera"></i>
+              </button>
+              <label title="Upload QR Image">
+                <i class="fas fa-file-upload"></i>
+                <input type="file" id="file-input" accept="image/*" style="display: none;">
+              </label>
+            </div>
+            <div class="thumb-label">लॉग इन</div>
+          <% } %>
+
+          <!-- 👤 PROFILE VIEW -->
+     <a href="/DC/profile" class="btn btn-outline-success btn-lg fw-bold w-100" style="max-width: 300px;">
+  👤 अपनी प्रोफ़ाइल देखें
+</a>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+            <!-- SECOND ROW: Notices -->
+
+           <div class="row">
   <div class="col-12 grid-margin stretch-card">
     <div class="card">
       <div class="card-body">
-        <h4 class="card-title text-center">📌 सूचना पट्ट (Notice Board)</h4>
-        <p class="card-description text-center">
-          ड्राइवर एवं परिचालकों के लिए अद्यतन दिशानिर्देश नीचे प्रस्तुत हैं।<br>
-          <span class="text-muted">(Updated operational instructions for Drivers and Conductors are listed below.)</span>
+        <h4 class="card-title text-center">🗂️ सूचना पटल / Notice Board</h4>
+        <p class="card-description text-center text-muted">
+          ड्राइवर/परिचालक के लिए ताज़ा सूचनाएँ — कृपया ध्यानपूर्वक पढ़ें।<br>
+          (Latest notices for Drivers/Conductors — please read carefully.)
         </p>
-  
-        <div>
-          <!-- PORTAL USAGE INSTRUCTIONS -->
-          <h5 class="collapsible-header">🔐 पोर्टल उपयोग संबंधी निर्देश:</h5>
-          <div class="collapsible-content">
-            <ul style="line-height: 1.8;">
-              <li>👥 प्रत्येक ड्राइवर एवं परिचालक को अपने-अपने पोर्टल खाते में लॉगिन करना आवश्यक है।<br>
-                  <span class="text-muted">(Each driver and conductor must log in to their respective portal account.)</span>
-              </li>
-              <li>🚌 एक बस से अधिकतम दो उपयोगकर्ता (ड्राइवर व परिचालक) जुड़े हो सकते हैं, परंतु किसी समय केवल <strong>एक</strong> उपयोगकर्ता <strong>लाइव</strong> रह सकता है।<br>
-                  <span class="text-muted">(A maximum of two users (driver and conductor) can be linked to one bus, but only one can be live at a time.)</span>
-              </li>
-              <li>🔄 यदि एक उपयोगकर्ता (जैसे ड्राइवर) पहले से लाइव है और दूसरा (परिचालक) “चेक-इन” करता है, तो पहले का कनेक्शन स्वतः समाप्त हो जाएगा।<br>
-                  <span class="text-muted">(If one user is already live and another checks in, the first user will be automatically disconnected.)</span>
-              </li>
-              <li>🤝 इसलिए “चेक-इन” से पूर्व आपसी संवाद अत्यंत आवश्यक है।<br>
-                  <span class="text-muted">(Hence, mutual communication is essential before checking in.)</span>
-              </li>
-              <li>📄 बार-बार पेज रिफ्रेश करने से सर्वर पर अनावश्यक लोड पड़ता है। कृपया इससे बचें।<br>
-                  <span class="text-muted">(Repeated page refreshes put unnecessary load on the server. Please avoid it.)</span>
-              </li>
-            </ul>
+
+        <!-- NOTICE LIST -->
+        <div class="notice-board">
+          <!-- Notice 1 -->
+          <div class="mb-3 p-3 border rounded">
+            <div class="d-flex justify-content-between align-items-start">
+              <div>
+                <h6 class="mb-1">🔴 महत्वपूर्ण: रूट परिवर्तन — Route Change</h6>
+                <small class="text-muted">01 Nov 2025 • Priority: High</small>
+              </div>
+              <span class="badge badge-danger">High</span>
+            </div>
+            <p class="mt-2 mb-0" style="line-height:1.6;">
+              आज से (01-Nov-2025) बस नं. 24 के लिए मार्ग में अस्थायी परिवर्तन किया जा रहा है — कृपया नए मार्ग का पालन करें और सभी स्टॉप्स की पुष्टि करें।<br>
+              (From 01-Nov-2025 route for Bus No.24 is temporarily changed — follow new route and confirm all stops.)
+            </p>
           </div>
-  
-          <!-- CHECK-IN PROCESS -->
-          <h5 class="collapsible-header">📍 चेक-इन प्रक्रिया:</h5>
-          <div class="collapsible-content">
-            <ul style="line-height: 1.8;">
-              <li>📲 “चेक-इन” करते समय लोकेशन अनुमति देना अनिवार्य है। अनुमति न मिलने पर सर्वर से कनेक्शन स्थापित नहीं होगा।<br>
-                  <span class="text-muted">(Location permission is mandatory during check-in. Without it, server connection cannot be established.)</span>
-              </li>
-              <li>🎥 स्ट्रीमिंग शुरू करने पर कैमरा अनुमति देना आवश्यक है। कैमरा स्ट्रीमिंग के माध्यम से प्रशासन को लाइव जानकारी दी जाती है।<br>
-                  <span class="text-muted">(Camera permission is required when starting streaming. It allows the admin to monitor the live feed.)</span>
-              </li>
-              <li>🗺️ चेक-इन पेज पर आपकी लाइव लोकेशन, तय मार्ग (route), एवं रुकने के स्थान (stops) प्रदर्शित होते हैं।<br>
-                  <span class="text-muted">(The check-in page displays your live location, assigned route, and scheduled stops.)</span>
-              </li>
-              <li>🗣️ चालक "स्टॉप अपडेट" के लिए मैन्युअल रूप से निम्न नोटिफिकेशन भेज सकता है:<br>
-                  <span class="text-muted">(The driver can manually send the following stop notifications:)</span>
-                <ul>
-                  <li>🟡 आने वाले हैं (Arriving)</li>
-                  <li>🟢 आ गए हैं (Arrived)</li>
-                  <li>🔵 निकलने वाले हैं (Departing)</li>
-                  <li>⚪ निकल गए हैं (Departed)</li>
-                </ul>
-              </li>
-              <li>📵 ऐप को बैकग्राउंड में न रखें, अन्यथा लाइव कनेक्शन टूट सकता है।<br>
-                  <span class="text-muted">(Do not keep the app in the background; it may break the live connection.)</span>
-              </li>
-            </ul>
+
+          <!-- Notice 2 -->
+          <div class="mb-3 p-3 border rounded">
+            <div class="d-flex justify-content-between align-items-start">
+              <div>
+                <h6 class="mb-1">🟡 सुरक्षा सूचना: रात्री ड्राइविंग पर सतर्क रहें — Safety Advisory</h6>
+                <small class="text-muted">30 Oct 2025 • Priority: Medium</small>
+              </div>
+              <span class="badge badge-warning">Medium</span>
+            </div>
+            <p class="mt-2 mb-0" style="line-height:1.6;">
+              रात में तेज़ रफ्तार से बचें, हेडलाइट साफ रखें और किनारे पर रुकने की स्थिति में दूसरे उपयोगकर्ताओं को सूचित करें।<br>
+              (Avoid high speed at night, keep headlights clean and inform others before stopping.)
+            </p>
           </div>
-  
-          <!-- DAILY ODOMETER -->
-          <h5 class="collapsible-header">📷 डेली ओडोमीटर रीडिंग व प्रमाण:</h5>
-          <div class="collapsible-content">
-            <ul style="line-height: 1.8;">
-              <li>📅 प्रत्येक दिन <strong>सुबह एवं शाम</strong> दो बार ओडोमीटर रीडिंग एवं उसकी स्पष्ट फोटो अपलोड करना अनिवार्य है।<br>
-                  <span class="text-muted">(It is mandatory to upload the odometer reading and a clear photo twice a day — morning and evening.)</span>
-              </li>
-              <li>📄 पोर्टल के <strong>मुख्य पेज पर उपलब्ध ओडोमीटर फॉर्म</strong> में रीडिंग भरें और वहीं से फोटो अपलोड करें।<br>
-                  <span class="text-muted">(Submit the reading and photo using the dedicated odometer form available on the portal's main page.)</span>
-              </li>
-              <li>📤 फोटो ड्राइवर या परिचालक – कोई भी अपलोड कर सकता है, लेकिन केवल निर्धारित फॉर्म के माध्यम से ही करें।<br>
-                  <span class="text-muted">(Either driver or conductor can upload the photo, but only through the official form.)</span>
-              </li>
-              <li>📸 ओडोमीटर की स्पष्ट फोटो आवश्यक है, जिससे वाहन की स्थिति का उचित रिकॉर्ड रखा जा सके।<br>
-                  <span class="text-muted">(A clear photo of the odometer is necessary to maintain accurate vehicle records.)</span>
-              </li>
-              <li>⚠️ यदि रीडिंग या फोटो अपलोड नहीं की जाती, तो प्रशासन को अलर्ट प्राप्त होता है और <strong>अनुशासनात्मक कार्रवाई</strong> की जा सकती है।<br>
-                  <span class="text-muted">(Failure to upload may alert the admin and lead to disciplinary action.)</span>
-              </li>
-            </ul>
+
+          <!-- Notice 3 -->
+          <div class="mb-3 p-3 border rounded">
+            <div class="d-flex justify-content-between align-items-start">
+              <div>
+                <h6 class="mb-1">🟢 फ्यूल अपडेट: फ्यूल पॉलिसी में बदलाव — Fuel Update</h6>
+                <small class="text-muted">28 Oct 2025 • Priority: Low</small>
+              </div>
+              <span class="badge badge-success">Low</span>
+            </div>
+            <p class="mt-2 mb-0" style="line-height:1.6;">
+              नए फ्यूल वाउचर प्रोसेस 1-Nov से लागू होंगे — कृपया हर रिफ्यूअल का वाउचर अटैच करें।<br>
+              (New fuel voucher process starts 1-Nov — attach voucher for every refill.)
+            </p>
           </div>
-  
-          <!-- EMERGENCY FACILITIES -->
-          <h5 class="collapsible-header">🚨 आपातकालीन सुविधाएं:</h5>
-          <div class="collapsible-content">
-            <ul style="line-height: 1.8;">
-              <li>🔴 पोर्टल पर “इमरजेंसी बटन” उपलब्ध है जिसका प्रयोग संकट के समय तुरंत सूचना देने हेतु करें।<br>
-                  <span class="text-muted">(An emergency button is available on the portal for instant alert during crisis situations.)</span>
-              </li>
-              <li>📥 सूचना सीधे प्रशासन तक पहुंचाई जाती है और तत्काल सहायता के लिए टीम को सक्रिय किया जाता है।<br>
-                  <span class="text-muted">(The alert is sent directly to the administration, and support is immediately mobilized.)</span>
-              </li>
-            </ul>
-          </div>
-  
-          <!-- COMPLAINTS -->
-          <h5 class="collapsible-header">🧾 शिकायत पंजीकरण व रिकॉर्डिंग:</h5>
-          <div class="collapsible-content">
-            <ul style="line-height: 1.8;">
-              <li>📝 ड्राइवर/परिचालक किसी भी घटना, समस्या या बस संबंधित शिकायत को पोर्टल पर दर्ज कर सकते हैं।<br>
-                  <span class="text-muted">(Drivers/conductors may report any issue, incident, or complaint directly on the portal.)</span>
-              </li>
-              <li>📹 फोटो, वीडियो, दस्तावेज़ आदि के साथ पूरा विवरण अपलोड किया जा सकता है।<br>
-                  <span class="text-muted">(They can upload photos, videos, or documents as supporting evidence.)</span>
-              </li>
-            </ul>
-          </div>
-  
-          <!-- PROFILE & SECURITY -->
-          <h5 class="collapsible-header">👤 प्रोफाइल व सुरक्षा:</h5>
-          <div class="collapsible-content">
-            <ul style="line-height: 1.8;">
-              <li>🔐 उपयोगकर्ता अपना पासवर्ड कभी भी बदल सकते हैं। नियमित परिवर्तन सुरक्षा हेतु आवश्यक है।<br>
-                  <span class="text-muted">(Users may change their password anytime. Regular updates are recommended for security.)</span>
-              </li>
-              <li>🚌 उपयोगकर्ता अपनी प्रोफाइल में <strong>स्वयं की जानकारी, असाइन किए गए सहायक (Helper)</strong> तथा <strong>निर्धारित बस</strong> की जानकारी देख सकते हैं।<br>
-                  <span class="text-muted">(Users can view their own details, assigned helper, and designated bus in the profile.)</span>
-              </li>
-              <li>✏️ यह जानकारी केवल <strong>देखी जा सकती है</strong>, उपयोगकर्ता इसे <strong>संशोधित या अपडेट</strong> नहीं कर सकते।<br>
-                  <span class="text-muted">(This information is view-only; users cannot modify or update it.)</span>
-              </li>
-              <li>👁️ प्रशासनिक टीम आपकी गतिविधियों की निगरानी करती है, ताकि संचालन पारदर्शी एवं सुरक्षित बना रहे।<br>
-                  <span class="text-muted">(All actions are monitored by the admin team to maintain transparency and security.)</span>
-              </li>
-            </ul>
-          </div>
-  
-          <p class="mt-4 font-italic text-center text-warning">
-            ⚠️ सभी उपयोगकर्ताओं से अपेक्षा है कि वे उपरोक्त सभी नियमों का पालन करेंगे। यह प्रणाली आपकी सुरक्षा, जवाबदेही एवं पारदर्शिता के लिए विकसित की गई है।<br>
-            <span class="text-muted">(All users are expected to follow the above rules. This system is built for your safety, accountability, and transparency.)</span>
-          </p>
-        </div>
+
+          
+
+        <!-- small footer note -->
+        <p class="mt-3 text-center text-muted small">
+          नोट: अधिक जानकारी या शिकायत दर्ज करने हेतु पोर्टल के "शिकायत" अनुभाग का उपयोग करें।<br>
+          (Note: Use the "Complaints" section on the portal for more information or to file complaints.)
+        </p>
       </div>
+    </div>
   </div>
 </div>
-              
-              
 
-
-                
-      
-            
-     
-              
-       
-
-            
-          <!-- content-wrapper ends -->
-          <!-- partial:../../partials/_footer.html -->
-          <%- include('./partials/footer.ejs') %>
-          
-          <!-- partial -->
-           </div>
         <!-- main-panel ends -->
       </div>
       </div>
@@ -594,7 +491,7 @@ async function startCamera(cameraId) {
       cameraId,
       { fps: 10, qrbox: 250 },
       decodedText => {
-        window.location.href = `/DC/driverGoLive/${decodedText}`;
+        window.location.href = `/loggedInBus/${decodedText}`;
       },
       err => console.warn("Scanning...", err)
     );
@@ -679,7 +576,7 @@ async function startCamera(cameraId) {
 
   html5QrCode.scanFile(imageFile, true)
     .then(decodedText => {
-      window.location.href = `/DC/driverGoLive/${encodeURIComponent(decodedText)}`;
+      window.location.href = `/DC/loggedInBus/${encodeURIComponent(decodedText)}`;
     })
     .catch(err => alert("No QR code found: " + err))
     .finally(() => {
@@ -752,54 +649,7 @@ async function startCamera(cameraId) {
   <script>
 
 const user = <%- JSON.stringify(user) %>;
-  document.addEventListener("DOMContentLoaded", async () => {
-    const form = document.getElementById("odometerForm");
-    const input = document.getElementById("odometerReading");
 
-    form.addEventListener("submit", async (e) => {
-      e.preventDefault(); // ✅ prevents page refresh
-
-      const reading = input.value;
-
-      document.getElementById("loader").style.display = "flex";
-
-      try {
-        const response = await fetch("/DC/odometer", {
-          method: "POST",
-          credentials: "include", // 👈 Important to send cookies
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ odometerReading: reading , busId : user.assignedBus._id }),
-        });
-
-        const result= await response.json()
-        document.getElementById("loader").style.display = "none";
-        document.getElementById("odoReading").innerText=`दूरी तय की गई : ${reading} कि.मी.`
-        let  message = result.message.slice(2); // pehle ke 2 character (🔇) hata do
-        safeSpeakHindi(message)
-        alert(result.message)
-     
-      
-      } catch (error) {
-        document.getElementById("loader").style.display = "none";
-        console.error(error);
-        if (
-  error.message.includes("Unexpected token '<'") ||
-  error.message.includes("position 0") // Firefox/Edge sometimes
-) {
-  window.location.href = "/driverConductorLogin";
-  return;
-}
-       
-        document.getElementById("loader").style.display = "none";
-        alert("❌ Server or network error.");
-        safeSpeakHindi("Server or network error.");
-      }
-    });
-  });
-
-  // haldine emeregency
 
   
   function handleEmergencyClick() {
@@ -894,6 +744,13 @@ fetch('/DC/emergencyAlert', {
 
 
 
+  function handleLogInBus(){
+
+        window.location.href = "/DC/PB";
+
+        
+
+}
   
  
   

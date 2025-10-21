@@ -46,25 +46,22 @@
             <div class="content-wrapper">
           
               <p class="mb-4 font-weight-bold">
-                आप और आपके साथी चालक या परिचालक द्वारा दर्ज की गई शिकायतें:
+                आप द्वारा दर्ज की गई शिकायतें:
               </p>
           
               <div class="row">
-                <% if (complaints.length == 0) { %>
-                    <p class="text-muted font-weight-bold">
-                      आपने अभी तक कोई शिकायत दर्ज नहीं की है।  
-                      <a href="/DC/registerComplain" class="text-primary font-weight-bold ml-1">
-                        यहाँ क्लिक करें शिकायत दर्ज करने के लिए →
-                      </a>
-                    </p>
-                  <% } %>
+       
+                
                   
                 <% complaints.forEach(function(complaint) { %>
                   <div class="col-xl-4 col-md-6 grid-margin stretch-card" id="<%= complaint._id   %>">
                     <div class="card shadow-sm border border-warning">
                       <div class="card-body">
-                        <h5 class="text-light font-weight-bold mb-3">
+                        <h4 class="text-light font-weight-bold mb-3">
                           📝 शिकायत: <%= complaint.complaintType %>
+                        </h4>
+                        <h5 class="text-light font-weight-bold mb-3">
+                          📝 busNumber: <%=complaint.busNumber %>
                         </h5>
           
                         <p class="mb-2">
@@ -128,7 +125,7 @@
         
       
                 
-            const result= await response.json()
+            const result= await res.json()
             document.getElementById("loader").style.display = "none";
         let  message = result.message.slice(2); // pehle ke 2 character (🔇) hata do
             safeSpeakHindi(message)

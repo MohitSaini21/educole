@@ -80,10 +80,11 @@
         <div class="main-panel">
           <div class="content-wrapper">
             <div class="row">
+              <!-- 🔍 Search Section -->
               <div class="col-12 grid-margin stretch-card" id="searchBus">
                 <div class="card">
                   <div class="card-body">
-                    <h4 class="card-title">
+                    <h4 class="card-title text-center">
                       🚌 Historical Records for Bus Number <%= bus.busNumber %>
                     </h4>
 
@@ -96,7 +97,6 @@
                           required
                         />
                       </div>
-
                       <button type="submit" class="btn btn-primary">
                         🔍 Search
                       </button>
@@ -106,20 +106,30 @@
               </div>
 
               <% if (busLog) { %>
-
+              <!-- ✅ Bus Log Found -->
               <div class="container">
+                <!-- Bus Info -->
                 <h6>
                   <p>
                     Bus Record for <%= bus.busNumber %> on <%=
                     moment(busLog.logDate, "YYYY-MM-DD").format("DD-MM-YYYY") %>
-                    <br />
                   </p>
 
-                  <p>Covered Distance <%=busLog.distanceCovered %> Km</p>
+                  <p>Covered Distance: <%= busLog.distanceCovered %> Km</p>
+                  <p>Driven By:</p>
+                  <ul>
+                    <% if (busLog.whoDrived && busLog.whoDrived.length > 0) { %>
+                    <% busLog.whoDrived.forEach(function(driverId) { %>
+                    <li>Operator Id: <%= driverId %></li>
+                    <% }); %> <% } else { %>
+                    <li>No drivers found.</li>
+                    <% } %>
+                  </ul>
                 </h6>
-                <br />
+
+                <!-- Tabs Navigation -->
                 <ul class="nav nav-pills mb-3" id="pills-tab" role="tablist">
-                  <% if (busLog.path.length>1) { %>
+                  <% if (busLog.path.length > 1) { %>
                   <li class="nav-item" role="presentation">
                     <button
                       class="nav-link active"
@@ -150,6 +160,7 @@
                       Events
                     </button>
                   </li>
+
                   <li class="nav-item" role="presentation">
                     <button
                       class="nav-link"
@@ -165,17 +176,17 @@
                     </button>
                   </li>
                 </ul>
+
+                <!-- Tabs Content -->
                 <div class="tab-content" id="pills-tabContent">
-                  <% if (busLog.path.length>1) { %>
+                  <!-- 🛣️ Routes Tab -->
+                  <% if (busLog.path.length > 1) { %>
                   <div
                     class="tab-pane fade show active"
                     id="pills-home"
                     role="tabpanel"
                     aria-labelledby="pills-home-tab"
-                    tabindex="0"
                   >
-                    <!-- // A about routes   -->
-
                     <div class="row">
                       <div
                         class="col-md-6 grid-margin stretch-card"
@@ -185,7 +196,7 @@
                           <div class="card-body p-0">
                             <iframe
                               id="videoIframe"
-                              src="/routingMachine?busId=<%=bus._id  %>"
+                              src="/routingMachine?busId=<%= bus._id %>"
                               frameborder="0"
                               style="width: 100%; height: 300px"
                               allow="autoplay; fullscreen"
@@ -200,10 +211,9 @@
                       >
                         <div class="card">
                           <div class="card-body p-0">
-                            <!-- Remove padding for full container usage -->
                             <iframe
                               id="videoIframe"
-                              src="/admin/routingMachine?logId=<%=busLog._id  %>"
+                              src="/admin/routingMachine?logId=<%= busLog._id %>"
                               frameborder="0"
                               style="width: 100%; height: 300px"
                               allow="autoplay; fullscreen"
@@ -215,20 +225,19 @@
                   </div>
                   <% } %>
 
+                  <!-- 🕒 Events Tab -->
                   <div
                     class="tab-pane fade"
                     id="pills-profile"
                     role="tabpanel"
                     aria-labelledby="pills-profile-tab"
-                    tabindex="0"
                   >
-                    <!-- // events -->
                     <div class="row">
+                      <!-- Stops Covered -->
                       <div class="col-lg-12 grid-margin stretch-card">
                         <div class="card">
                           <div class="card-body">
                             <h4 class="card-title">Stops Covered</h4>
-
                             <div class="table-responsive">
                               <table
                                 class="table table-bordered text-center"
@@ -243,8 +252,7 @@
                                   </tr>
                                 </thead>
                                 <tbody>
-                                  <% if (busLog && busLog.stops &&
-                                  busLog.stops.length > 0) { %> <%
+                                  <% if (busLog?.stops?.length > 0) { %> <%
                                   busLog.stops.forEach((stopLog, index) => { %>
                                   <tr
                                     id="stop-<%= stopLog.stop._id || stopLog.stop %>"
@@ -252,12 +260,10 @@
                                     <td><%= index + 1 %></td>
                                     <td><%= stopLog.stopName || '__' %></td>
 
-                                    <!-- Morning Times -->
                                     <td>
                                       <div>
                                         <strong>Expected:</strong> <%=
-                                        stopLog.eMorningTime ?
-                                        stopLog.eMorningTime : "__" %>
+                                        stopLog.eMorningTime || "__" %>
                                       </div>
                                       <div>
                                         <strong>Actual:</strong> <%=
@@ -265,12 +271,10 @@
                                       </div>
                                     </td>
 
-                                    <!-- Evening Times -->
                                     <td>
                                       <div>
                                         <strong>Expected:</strong> <%=
-                                        stopLog.eEveningTime ?
-                                        stopLog.eEveningTime : "__" %>
+                                        stopLog.eEveningTime || "__" %>
                                       </div>
                                       <div>
                                         <strong>Actual:</strong> <%=
@@ -289,28 +293,28 @@
                           </div>
                         </div>
                       </div>
+
+                      <!-- Campus Events -->
                       <div class="col-lg-12 grid-margin stretch-card">
                         <div class="card">
                           <div class="card-body">
                             <h4 class="card-title">Campus Events</h4>
-
                             <div class="table-responsive mt-4">
                               <table class="table table-bordered text-center">
                                 <thead class="thead-dark">
                                   <tr>
                                     <th>#</th>
-                                    <th>campus</th>
+                                    <th>Campus</th>
                                     <th>Event Type</th>
                                     <th>Timestamp</th>
                                   </tr>
                                 </thead>
                                 <tbody>
-                                  <% if (busLog && busLog.events &&
-                                  busLog.events.length > 0) { %> <%
+                                  <% if (busLog?.events?.length > 0) { %> <%
                                   busLog.events.forEach((ev, index) => { %>
                                   <tr>
                                     <td><%= index + 1 %></td>
-                                    <td><%=ev.campus %></td>
+                                    <td><%= ev.campus %></td>
                                     <td>
                                       <span
                                         class="badge <%= ev.event === 'Entered' ? 'bg-success' : 'bg-danger' %>"
@@ -318,7 +322,7 @@
                                         <%= ev.event %>
                                       </span>
                                     </td>
-                                    <td><%= ev.timestamp%></td>
+                                    <td><%= ev.timestamp %></td>
                                   </tr>
                                   <% }) %> <% } else { %>
                                   <tr>
@@ -333,16 +337,15 @@
                       </div>
                     </div>
                   </div>
+
+                  <!-- ⚙️ Meter Tab -->
                   <div
                     class="tab-pane fade"
                     id="pills-contact"
                     role="tabpanel"
                     aria-labelledby="pills-contact-tab"
-                    tabindex="0"
                   >
-                    <!-- // Meter -->
-
-                    <!-- Include Bootstrap modal once -->
+                    <!-- Custom Image Modal -->
                     <div id="customImageModal" class="custom-modal">
                       <span class="custom-close" onclick="closeCustomModal()"
                         >&times;</span
@@ -350,6 +353,7 @@
                       <img class="custom-modal-content" id="customModalImage" />
                     </div>
 
+                    <!-- Meter Snaps -->
                     <div class="row">
                       <div class="col-12">
                         <div class="card">
@@ -373,9 +377,10 @@
                                       busLog.morningSnap.reading %> km
                                     </p>
                                     <p>
-                                      <strong>Captured At:</strong>
-                                      <%= busLog.morningSnap.takenAt %>
+                                      <strong>Captured At:</strong> <%=
+                                      busLog.morningSnap.takenAt %>
                                     </p>
+
                                     <% if (busLog.morningSnap.image) { %>
                                     <button
                                       class="btn btn-sm btn-outline-info"
@@ -410,9 +415,10 @@
                                       busLog.eveningSnap.reading %> km
                                     </p>
                                     <p>
-                                      <strong>Captured At:</strong>
-                                      <%= busLog.eveningSnap.takenAt %>
+                                      <strong>Captured At:</strong> <%=
+                                      busLog.eveningSnap.takenAt %>
                                     </p>
+
                                     <% if (busLog.eveningSnap.image) { %>
                                     <button
                                       class="btn btn-sm btn-outline-info"
@@ -420,6 +426,13 @@
                                     >
                                       🔍 Preview Meter
                                     </button>
+                                    <br>
+                                    <br>
+                                    <p class="text-success mb-0">
+                                      Captured By <%=
+                                      busLog.eveningSnap.submittedWho %>
+                                      (Operator)
+                                    </p>
                                     <% } %> <% } else { %>
                                     <p class="text-danger mb-0">
                                       Operator did not provide the evening
@@ -430,17 +443,20 @@
                                 </div>
                               </div>
                             </div>
-
                             <!-- /.row -->
                           </div>
                         </div>
                       </div>
                     </div>
                   </div>
+                  <!-- End Meter Tab -->
                 </div>
+                <!-- /.tab-content -->
               </div>
-              <% } else { %>
+              <!-- /.container -->
 
+              <% } else { %>
+              <!-- ❌ No History Found -->
               <div class="container">
                 <% if (requestedDate) { %>
                 <p>
@@ -456,13 +472,15 @@
               </div>
               <% } %>
             </div>
+            <!-- /.row -->
           </div>
-          <!-- content-wrapper ends -->
-          <!-- partial:partials/_footer.html -->
-          <%- include('../corePartials/footer.ejs') %>
-          <%-include('../corePartials/loader.ejs') %>
-          <!-- partial -->
+          <!-- /.content-wrapper -->
+
+          <!-- Footer Partials -->
+          <%- include('../corePartials/footer.ejs') %> <%-
+          include('../corePartials/loader.ejs') %>
         </div>
+
         <!-- main-panel ends -->
       </div>
       <!-- page-body-wrapper ends -->

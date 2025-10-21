@@ -14,8 +14,22 @@ import { fileURLToPath } from "url";
 import generatePassword from "../utils/password.js";
 import mongoose from "mongoose";
 import FCM from "../model/FCM.js";
+import client from "../redis-client.js";
 
 let router = express.Router();
+
+async function removeCache(userId) {
+  console.log("Admin has cleared the cache as well.");
+  await client.del(`${userId}`);
+}
+async function removeCacheBus(userId) {
+  console.log("Admin has cleared Bus cache as well.");
+  let busId = await client.get(`operatorTemBus:${userId}`);
+  if (busId) {
+    await client.del(`operatorTemBus:${userId}`);
+    await client.del(`busTemLog:${busId}`);
+  }
+}
 
 function generateCustomId(prefix = "ID") {
   const random = Math.random().toString(36).substring(2, 6).toUpperCase(); // 4 random characters
@@ -278,6 +292,7 @@ router.post("/conductorDocuments/:id", upload.any(), async (req, res) => {
 
     conductor.conductorDocuments.push(...documents);
     await conductor.save();
+    await removeCache(conductor.conductorId);
 
     res.redirect(
       `/administrator/settings/conductorDriver?conductorId=${conductor._id}`
@@ -333,6 +348,7 @@ router.post(
       conductor.profilePhoto = relativePath;
 
       await conductor.save();
+      await removeCache(conductor.conductorId);
 
       const io = req.app.get("io");
       const queryBusId = conductor.assignedBus;
@@ -379,6 +395,7 @@ router.post("/conductorRow/:id", async (req, res) => {
     }
     // 1. Fetch the existing document
     const oldConductor = await Conductor.findById(id);
+    await removeCache(oldConductor.conductorId);
     if (!oldConductor) {
       return res.status(404).json({ message: "Conductor not found" });
     }
@@ -388,6 +405,7 @@ router.post("/conductorRow/:id", async (req, res) => {
       updateData.conductorId &&
       updateData.conductorId !== oldConductor.conductorId
     ) {
+      await removeCacheBus(oldConductor._id);
       updateData.isLogged = false; // Mark as not logged
     }
     // Fetch conductor by ID and update
@@ -453,6 +471,7 @@ router.post("/driverDocuments/:id", upload.any(), async (req, res) => {
 
     conductor.driverDocuments.push(...documents);
     await conductor.save();
+    await removeCache(conductor.driverId);
 
     res.redirect(
       `/administrator/settings/conductorDriver?driverId=${conductor._id}`
@@ -507,6 +526,7 @@ router.post(
 
       conductor.profilePhoto = relativePath;
       await conductor.save();
+      await removeCache(conductor.driverId);
 
       const io = req.app.get("io");
       const queryBusId = conductor.assignedBus;
@@ -559,7 +579,9 @@ router.post("/driverRow/:id", async (req, res) => {
     }
 
     // 2. Check if conductorId is being updated AND is different
+    await removeCache(oldConductor.driverId);
     if (updateData.driverId && updateData.driverId !== oldConductor.driverId) {
+      await removeCacheBus(oldConductor._id);
       updateData.isLogged = false; // Mark as not logged
     }
 
@@ -592,7 +614,6 @@ router.post("/driverRow/:id", async (req, res) => {
     }
 
     // Redirect after disconnect
-
     return res.redirect(
       `/administrator/settings/conductorDriver?driverId=${driver._id}`
     );
@@ -854,6 +875,12 @@ router.post("/delete-bus", async (req, res) => {
       bus.driver ? Driver.findById(bus.driver).lean() : null,
       bus.conductor ? Conductor.findById(bus.conductor).lean() : null,
     ]);
+
+    await removeCache(driver.driverId);
+    await removeCache(conductor.conductorId);
+    await removeCacheBus(driver._id);
+    await removeCacheBus(conductor._id);
+    await client.del(`cachedBus:${bus._id}`);
 
     // ✅ Safe file delete helper (skips default files)
     const deleteFileIfExists = (
@@ -1190,6 +1217,7 @@ router.get("/deleteDriverDocument/:docId/:userId", async (req, res) => {
       (doc) => doc._id.toString() !== docId
     );
 
+    await removeCache(user.driverId);
     await user.save(); // Save updated bus
 
     // Redirect back
@@ -1242,6 +1270,7 @@ router.get("/deleteConductorDocument/:docId/:userId", async (req, res) => {
       (doc) => doc._id.toString() !== docId
     );
 
+    await removeCache(user.conductorId);
     await user.save(); // Save updated bus
 
     // Redirect back
