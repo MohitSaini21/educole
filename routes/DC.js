@@ -486,39 +486,56 @@ import { generateTokenAndSetCookie } from "../utils/createJwtTokenSetCookie.js";
 router.get(
   "/loggedInBus/:busId",
   busAuthLoggedIn,
-  checkUserExistenceAndRedirect(),
+  checkUserExistenceAndRedirect(), // Assuming this middleware checks req.worker existence
   async (req, res) => {
-    const { busId } = req.params;
+    try {
+      const { busId } = req.params;
 
-    if (!mongoose.Types.ObjectId.isValid(busId)) {
-      return res.redirect("/DC");
-    }
-    const exists = await Bus.exists({ _id: busId });
-    if (!exists) {
-      return res.redirect("/DC");
-    } else {
-      //  let's check to maek sure bus is free to logIn
+      // Validate busId format
+      if (!mongoose.Types.ObjectId.isValid(busId)) {
+        return res.redirect("/DC");
+      }
+
+      // Check if bus exists in DB
+      const exists = await Bus.exists({ _id: busId });
+      if (!exists) {
+        return res.redirect("/DC");
+      }
+
+      // Check if bus is already logged in by someone else
       let operatorObject = await client.get(`busTemLog:${busId}`);
+
       if (operatorObject) {
         operatorObject = JSON.parse(operatorObject);
-        if (!(operatorObject.id == req.worker._id)) {
+
+        // If another operator logged in, show user.ejs and ask to logout first
+        if (operatorObject.id !== req.worker._id.toString()) {
           return res.render("DC/user.ejs", { user: operatorObject });
         }
+        // If same user, allow to proceed — maybe refresh token?
       }
-      let token = await generateTokenAndSetCookie(res, busId);
+
+      // Bus is free or same user: generate token & set Redis sessions
+      const token = await generateTokenAndSetCookie(res, busId);
       if (!token) {
         return res.redirect("/DC");
-      } else {
-        let userObject = {
-          id: req.worker._id,
-          name: req.worker.name,
-          phone: req.worker.phone,
-          profilePhoto: req.worker.profilePhoto,
-        };
-        await client.set(`busTemLog:${busId}`, JSON.stringify(userObject));
-        await client.set(`operatorTemBus:${req.worker._id}`, busId);
-        return res.redirect("/DC/PB");
       }
+
+      // Save user session in Redis
+      const userObject = {
+        id: req.worker._id.toString(),
+        name: req.worker.name,
+        phone: req.worker.phone,
+        profilePhoto: req.worker.profilePhoto,
+      };
+
+      await client.set(`busTemLog:${busId}`, JSON.stringify(userObject));
+      await client.set(`operatorTemBus:${req.worker._id.toString()}`, busId);
+
+      return res.redirect("/DC/PB");
+    } catch (error) {
+      console.error("Error in /loggedInBus/:busId handler:", error);
+      return res.redirect("/DC");
     }
   }
 );
@@ -550,7 +567,7 @@ function busAuth(req, res, next) {
   }
 }
 
-function busAuthLoggedIn(req, res, next) {
+async function busAuthLoggedIn(req, res, next) {
   try {
     const token = req.cookies.busToken;
 
@@ -562,15 +579,26 @@ function busAuthLoggedIn(req, res, next) {
 
       if (decoded) {
         console.log("User is already logged in ");
-        return res.redirect("/DC/PB"); // ✅ Already logged in, redirect
+
+        // // Check if session exists in Redis
+        // const operatorObject = await client.get(`busTemLog:${decoded.busId}`);
+        // if (!operatorObject) {
+        //   // No session in Redis but token present => clear cookie and continue
+        //   res.clearCookie("busToken");
+        //   return next();
+        // }
+
+        // Session exists, redirect to dashboard
+        return res.redirect("/DC/PB");
       }
     }
 
-    // ❌ No token or failed decode, let them access login/signup
+    // No token or token invalid, allow login/signup pages
     next();
   } catch (error) {
     console.error("Particular Bus Authentication error:", error);
-    next(); // ✅ Don't crash the app, proceed to next middleware
+    // Don't crash app, just proceed
+    next();
   }
 }
 

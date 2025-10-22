@@ -1307,129 +1307,120 @@ async function deleteKeysByPrefixSimple(prefix) {
   }
 }
 
-const lockTTL = 12 * 60 * 1000; // 12 minutes
+cron.schedule(
+  "0 0 * * *", // Every day at 12:00 AM IST
+  async () => {
+    try {
+      let lockKey = await client.set("lockKey", "MohitSaini", {
+        NX: true,
+        EX: 3600, // expires in 1 hour
+      });
 
-const redlock = new Redlock([client], {
-  retryCount: 0, // Don’t retry if lock is taken
-});
+      if (!(lockKey === "OK")) {
+        return;
+      }
+    } catch (err) {
+      console.error("Redis error:", err);
+      return;
+    }
+    const nowIST = moment().tz("Asia/Kolkata");
+    console.log(
+      `⏰ Cron triggered at (IST): ${nowIST.format("YYYY-MM-DD HH:mm:ss")}`
+    );
 
-// cron.schedule(
-//   "0 0 * * *", // Every day at 12:00 AM IST
-//   async () => {
-//     const nowIST = moment().tz("Asia/Kolkata");
-//     console.log(
-//       `⏰ Cron triggered at (IST): ${nowIST.format("YYYY-MM-DD HH:mm:ss")}`
-//     );
+    try {
+      const busIds = await getAllBusObjectIds();
 
-//     // 🔐 Try to acquire lock
-//     let lock;
-//     try {
-//       lock = await redlock.acquire(["locks:daily-bus-cron"], lockTTL);
-//       console.log("✅ Acquired lock. Running cron job...");
-//     } catch (err) {
-//       console.log("⏭️ Skipping cron — another instance is already running it.");
-//       return; // Skip job
-//     }
+      for (const busId of busIds) {
+        try {
+          let busObject = {};
 
-//     try {
-//       const busIds = await getAllBusObjectIds();
+          const distanceCovered = await client.get(
+            `lastEvaluated:${busId}:distanceCovered`
+          );
+          if (distanceCovered) busObject.distanceCovered = distanceCovered;
 
-//       for (const busId of busIds) {
-//         try {
-//           let busObject = {};
+          let eventTimeline = await client.lRange(
+            `lastEvaluated:${busId}:eventTimeline`,
+            0,
+            -1
+          );
+          eventTimeline = eventTimeline
+            .map((str) => {
+              try {
+                return JSON.parse(str);
+              } catch {
+                return null;
+              }
+            })
+            .filter((item) => item !== null);
+          if (eventTimeline.length) busObject.eventTimeline = eventTimeline;
 
-//           const distanceCovered = await client.get(
-//             `lastEvaluated:${busId}:distanceCovered`
-//           );
-//           if (distanceCovered) busObject.distanceCovered = distanceCovered;
+          let reachedStops = await getAllStopsForBus(busId);
+          if (reachedStops && Object.keys(reachedStops).length > 0) {
+            busObject.reachedStops = reachedStops;
+          }
 
-//           let eventTimeline = await client.lRange(
-//             `lastEvaluated:${busId}:eventTimeline`,
-//             0,
-//             -1
-//           );
-//           eventTimeline = eventTimeline
-//             .map((str) => {
-//               try {
-//                 return JSON.parse(str);
-//               } catch {
-//                 return null;
-//               }
-//             })
-//             .filter((item) => item !== null);
-//           if (eventTimeline.length) busObject.eventTimeline = eventTimeline;
+          let path = await client.lRange(`lastEvaluated:${busId}:path`, 0, -1);
+          path = path
+            .map((str) => {
+              try {
+                return JSON.parse(str);
+              } catch {
+                return null;
+              }
+            })
+            .filter((item) => item !== null);
+          if (path.length) busObject.path = path;
 
-//           let reachedStops = await getAllStopsForBus(busId);
-//           if (reachedStops && Object.keys(reachedStops).length > 0) {
-//             busObject.reachedStops = reachedStops;
-//           }
+          const members = await client.sMembers(
+            `lastEvaluated:${busId}:drived`
+          );
+          if (members.length) busObject.whoDrived = members;
 
-//           let path = await client.lRange(`lastEvaluated:${busId}:path`, 0, -1);
-//           path = path
-//             .map((str) => {
-//               try {
-//                 return JSON.parse(str);
-//               } catch {
-//                 return null;
-//               }
-//             })
-//             .filter((item) => item !== null);
-//           if (path.length) busObject.path = path;
+          if (Object.keys(busObject).length > 0) {
+            busObject.busId = busId;
+            await newsaveLogs(busObject);
+          }
 
-//           const members = await client.sMembers(
-//             `lastEvaluated:${busId}:drived`
-//           );
-//           if (members.length) busObject.whoDrived = members;
+          const prefix = `lastEvaluated:${busId}`;
+          await deleteKeysByPrefixSimple(prefix);
+        } catch (err) {
+          console.error(`❌ Error processing busId ${busId}:`, err);
+        }
+      }
 
-//           if (Object.keys(busObject).length > 0) {
-//             busObject.busId = busId;
-//             await newsaveLogs(busObject);
-//           }
+      console.log("🧹 Cleared all entries from lastEvaluated");
 
-//           const prefix = `lastEvaluated:${busId}`;
-//           await deleteKeysByPrefixSimple(prefix);
-//         } catch (err) {
-//           console.error(`❌ Error processing busId ${busId}:`, err);
-//         }
-//       }
+      const cutoffDate = nowIST
+        .clone()
+        .subtract(10, "day")
+        .format("YYYY-MM-DD");
+      console.log(`🧾 Deleting logs older than: ${cutoffDate}`);
 
-//       console.log("🧹 Cleared all entries from lastEvaluated");
+      const oldLogs = await BusActivityLog.find({
+        logDate: { $lt: cutoffDate },
+      });
 
-//       const cutoffDate = nowIST
-//         .clone()
-//         .subtract(10, "day")
-//         .format("YYYY-MM-DD");
-//       console.log(`🧾 Deleting logs older than: ${cutoffDate}`);
+      for (const log of oldLogs) {
+        if (log.morningSnap?.image) {
+          deleteFileIfExists(log.morningSnap.image, "Morning Snap");
+        }
+        if (log.eveningSnap?.image) {
+          deleteFileIfExists(log.eveningSnap.image, "Evening Snap");
+        }
+        await log.deleteOne();
+        console.log(`✅ Deleted log ID: ${log._id} (logDate: ${log.logDate})`);
+      }
 
-//       const oldLogs = await BusActivityLog.find({
-//         logDate: { $lt: cutoffDate },
-//       });
-
-//       for (const log of oldLogs) {
-//         if (log.morningSnap?.image) {
-//           deleteFileIfExists(log.morningSnap.image, "Morning Snap");
-//         }
-//         if (log.eveningSnap?.image) {
-//           deleteFileIfExists(log.eveningSnap.image, "Evening Snap");
-//         }
-//         await log.deleteOne();
-//         console.log(`✅ Deleted log ID: ${log._id} (logDate: ${log.logDate})`);
-//       }
-
-//       console.log("🧹 Old logs cleanup complete.");
-//     } catch (err) {
-//       console.error("❌ Error in main cron job:", err);
-//     } finally {
-//       // 🔓 Release lock
-//       try {
-//         await lock.release();
-//         console.log("🔓 Lock released after job completion.");
-//       } catch (releaseErr) {
-//         console.error("⚠️ Failed to release lock:", releaseErr);
-//       }
-//     }
-//   },
-//   {
-//     timezone: "Asia/Kolkata",
-//   }
-// );
+      console.log("🧹 Old logs cleanup complete.");
+    } catch (err) {
+      console.error("❌ Error in main cron job:", err);
+    } finally {
+      await client.del("lockKey");
+    }
+  },
+  {
+    timezone: "Asia/Kolkata",
+  }
+);

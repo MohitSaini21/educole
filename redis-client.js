@@ -26,9 +26,10 @@ const startRedisClient = async () => {
       subClient.connect(),
     ]);
 
-    // ⚠️ Only flush if you really need to clear Redis on startup
-    await client.flushAll();
-    console.log("✅ Redis flushed on server start.");
+    // if (process.env.NODE_ENV === "development") {
+    //   await client.flushAll();
+    //   console.log("✅ Redis flushed (development only)");
+    // }
 
     console.log("✅ Redis clients connected successfully");
   } catch (err) {

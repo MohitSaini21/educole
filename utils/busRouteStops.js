@@ -10,6 +10,21 @@ import Bus from "../model/bus.js";
  */
 export async function setAllRouteStops() {
   try {
+    try {
+      let lockKey = await client.set("startUpKey", "MohitSaini", {
+        NX: true,
+        EX: 3600, // expires in 1 hour
+      });
+
+      if (!(lockKey === "OK")) {
+        return;
+      }
+    } catch (err) {
+      console.error("Redis error:", err);
+      return;
+    }
+
+    console.log("hey I am the one who got a job to set up the redis");
     const buses = await Bus.find().select("_id routeStops iconPhoto busNumber");
 
     for (const bus of buses) {
@@ -20,7 +35,10 @@ export async function setAllRouteStops() {
           routeStops: bus.routeStops,
           iconPhoto: bus.iconPhoto,
           busNumber: bus.busNumber,
-        })
+        }),
+        {
+          NX: true,
+        }
       );
     }
 
@@ -28,6 +46,7 @@ export async function setAllRouteStops() {
 
     const fields = await client.hKeys("routeStopMap");
     console.log(fields);
+    await client.del("startUpKey");
   } catch (err) {
     console.error("❌ Failed to cache bus data:", err);
   }
