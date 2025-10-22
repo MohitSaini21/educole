@@ -69,8 +69,7 @@ async function findBus(req, res, userId, busId) {
     if (!bus) {
       // ❌ Bus not found in DB — cleanup
       res.clearCookie("busToken");
-      await client.del(`busTemLog:${busId}`);
-      await client.del(`operatorTemBus:${userId}`);
+
       return res.redirect("/DC");
     }
 
@@ -450,11 +449,7 @@ router.get("/logout", checkUserExistenceAndRedirect(), async (req, res) => {
     res.clearCookie("authToken");
     res.clearCookie("busToken");
     res.clearCookie("fcmTokenExpiry");
-    let busId = await client.get(`operatorTemBus:${req.worker._id}`);
-    if (busId) {
-      await client.del(`operatorTemBus:${req.worker._id}`);
-      await client.del(`busTemLog:${busId}`);
-    }
+
     await client.del(`${req.user.id}`);
     return res.redirect("/driverConductorLogin");
   } catch (error) {
@@ -470,8 +465,7 @@ router.get(
   async (req, res) => {
     try {
       res.clearCookie("busToken");
-      await client.del(`busTemLog:${req.busId}`);
-      await client.del(`operatorTemBus:${req.worker._id}`);
+
       return res.redirect("/DC");
     } catch (error) {
       console.error("Logout error:", error);
@@ -485,8 +479,8 @@ import { generateTokenAndSetCookie } from "../utils/createJwtTokenSetCookie.js";
 
 router.get(
   "/loggedInBus/:busId",
-  busAuthLoggedIn,
   checkUserExistenceAndRedirect(), // Assuming this middleware checks req.worker existence
+  busAuthLoggedIn,
   async (req, res) => {
     try {
       const { busId } = req.params;
@@ -502,35 +496,11 @@ router.get(
         return res.redirect("/DC");
       }
 
-      // Check if bus is already logged in by someone else
-      let operatorObject = await client.get(`busTemLog:${busId}`);
-
-      if (operatorObject) {
-        operatorObject = JSON.parse(operatorObject);
-
-        // If another operator logged in, show user.ejs and ask to logout first
-        if (operatorObject.id !== req.worker._id.toString()) {
-          return res.render("DC/user.ejs", { user: operatorObject });
-        }
-        // If same user, allow to proceed — maybe refresh token?
-      }
-
       // Bus is free or same user: generate token & set Redis sessions
       const token = await generateTokenAndSetCookie(res, busId);
       if (!token) {
         return res.redirect("/DC");
       }
-
-      // Save user session in Redis
-      const userObject = {
-        id: req.worker._id.toString(),
-        name: req.worker.name,
-        phone: req.worker.phone,
-        profilePhoto: req.worker.profilePhoto,
-      };
-
-      await client.set(`busTemLog:${busId}`, JSON.stringify(userObject));
-      await client.set(`operatorTemBus:${req.worker._id.toString()}`, busId);
 
       return res.redirect("/DC/PB");
     } catch (error) {
@@ -578,17 +548,6 @@ async function busAuthLoggedIn(req, res, next) {
       );
 
       if (decoded) {
-        console.log("User is already logged in ");
-
-        // // Check if session exists in Redis
-        // const operatorObject = await client.get(`busTemLog:${decoded.busId}`);
-        // if (!operatorObject) {
-        //   // No session in Redis but token present => clear cookie and continue
-        //   res.clearCookie("busToken");
-        //   return next();
-        // }
-
-        // Session exists, redirect to dashboard
         return res.redirect("/DC/PB");
       }
     }
@@ -634,8 +593,7 @@ router.post(
       if (!bus) {
         // ❌ Bus not found in DB — cleanup
         res.clearCookie("busToken");
-        await client.del(`busTemLog:${busId}`);
-        await client.del(`operatorTemBus:${userId}`);
+
         return res.redirect("/DC");
       }
 
@@ -900,10 +858,6 @@ router.post(
       if (!bus) {
         res.clearCookie("busToken");
 
-        // Remove any associated Redis keys (avoid using req.busId — use busId param)
-        await client.del(`busTemLog:${busId}`);
-        await client.del(`operatorTemBus:${userId}`);
-
         // Redirect user back
         return res.redirect("/DC");
       }
@@ -990,10 +944,6 @@ router.post(
 
       if (!bus) {
         res.clearCookie("busToken");
-
-        // Remove any associated Redis keys (avoid using req.busId — use busId param)
-        await client.del(`busTemLog:${busId}`);
-        await client.del(`operatorTemBus:${userId}`);
 
         return res.status(404).json({ message: "❌ बस नहीं मिली।" });
       }
