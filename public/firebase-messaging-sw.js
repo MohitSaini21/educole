@@ -45,6 +45,7 @@ const CACHE_NAME = "mywebapp-cache-v1";
 const ASSETS_TO_CACHE = [
   "/",
   "/index.html",
+  "/public/bus.gif",
   "/offline.html",
   "/public/css/bootstrap.css",
   "/assets/manifest.json",
