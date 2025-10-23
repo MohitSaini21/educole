@@ -37,3 +37,96 @@ const messaging = firebase.messaging();
 //   // Show notification
 //   self.registration.showNotification(notificationTitle, notificationOptions);
 // });
+
+
+
+// // 🧠 Define versioned cache name (update when files change)
+// const CACHE_NAME = "mywebapp-cache-v1";
+
+// // 🧱 Pre-cache these static assets during installation
+// const ASSETS_TO_CACHE = [
+//   "/",
+//   "/index.html",
+//   "/offline.html",
+//   "/favicon.ico",
+//   "/manifest.json",
+//   "/styles.css",       // Add your real CSS files here
+//   "/script.js",        // Add your main JS
+//   "/logo192.png",      // Example icon
+//   "/logo512.png",      // Example icon
+// ];
+
+// // -------------------------------------------------------------
+// // 🧱 1️⃣ INSTALL EVENT → Cache essential files for offline use
+// // -------------------------------------------------------------
+// self.addEventListener("install", (event) => {
+//   console.log("[ServiceWorker] Install event triggered ✅");
+
+//   event.waitUntil(
+//     caches.open(CACHE_NAME).then((cache) => {
+//       console.log("[ServiceWorker] Caching all core assets...");
+//       return cache.addAll(ASSETS_TO_CACHE);
+//     })
+//   );
+
+//   // Force the waiting service worker to activate immediately
+//   self.skipWaiting();
+// });
+
+// // -------------------------------------------------------------
+// // 🧹 2️⃣ ACTIVATE EVENT → Clean up old caches
+// // -------------------------------------------------------------
+// self.addEventListener("activate", (event) => {
+//   console.log("[ServiceWorker] Activate event triggered 🧹");
+
+//   event.waitUntil(
+//     caches.keys().then((cacheNames) => {
+//       return Promise.all(
+//         cacheNames.map((name) => {
+//           if (name !== CACHE_NAME) {
+//             console.log("[ServiceWorker] Deleting old cache:", name);
+//             return caches.delete(name);
+//           }
+//         })
+//       );
+//     })
+//   );
+
+//   // Claim control of all clients (tabs) immediately
+//   self.clients.claim();
+// });
+
+// // -------------------------------------------------------------
+// // 🌐 3️⃣ FETCH EVENT → Intercept network requests
+// // -------------------------------------------------------------
+// self.addEventListener("fetch", (event) => {
+//   // For non-GET requests (like POST/PUT), skip caching
+//   if (event.request.method !== "GET") return;
+
+//   event.respondWith(
+//     caches.match(event.request).then((cachedResponse) => {
+//       // ✅ Serve from cache if available
+//       if (cachedResponse) {
+//         console.log("[ServiceWorker] Serving from cache:", event.request.url);
+//         return cachedResponse;
+//       }
+
+//       // 🌐 Else, try fetching from the network
+//       return fetch(event.request)
+//         .then((networkResponse) => {
+//           // 🧠 Dynamic caching: store new responses in cache
+//           return caches.open(CACHE_NAME).then((cache) => {
+//             // Clone response because it's a stream
+//             cache.put(event.request, networkResponse.clone());
+//             return networkResponse;
+//           });
+//         })
+//         .catch(() => {
+//           // ⚠️ If offline, show fallback page
+//           if (event.request.mode === "navigate") {
+//             return caches.match("/offline.html");
+//           }
+//         });
+//     })
+//   );
+// });

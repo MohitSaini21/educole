@@ -1043,8 +1043,6 @@ io.on("connection", async (socket) => {
     }
   });
 
-  //  Generatting Speed Alert
-
   socket.on("overSpeedAlert", async ({ busId, message }) => {
     console.log(message);
 

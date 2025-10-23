@@ -1,5 +1,6 @@
 let socket = null;
 let isProvidingLocation = false;
+let speed;
 
 let previousPoint = null;
 
@@ -86,6 +87,7 @@ function saveLocation(position) {
     longitude: coords.longitude,
     accuracy: coords.accuracy,
     timestamp: currentTime,
+    speed: speed ? speed : null,
   };
 
   // ✅ First point — accept it directly
@@ -104,6 +106,7 @@ function saveLocation(position) {
 
   if (isSame) {
     return baseData;
+    // return null     this is for production
     // later it should be null
   }
 
@@ -1098,16 +1101,17 @@ function DistanceCover(lat, lng, accuracy) {
       const timeElapsed = now - lastDistanceTimeStamp; // in ms
       const hoursElapsed = timeElapsed / (1000 * 60 * 60); // ms to hours
       if (newDistance === 0 || hoursElapsed === 0) return;
-      const speed = newDistance / 1000 / hoursElapsed; // km/h
+      const newSpeed = newDistance / 1000 / hoursElapsed; // km/h
 
       // Safety filter: ignore unrealistic spikes (e.g. GPS glitch)
-      if (speed <= 150) {
+      if (newSpeed <= 150) {
         speedLogs.push({ time: now, speed });
+        speed = newSpeed;
 
-        if (speed > bus.averageSpeed) {
+        if (newSpeed > bus.averageSpeed) {
           let message = `🚨 Over-speeding Alert from ${
             bus.busNumber
-          }: ${speed.toFixed(2)} km/h`;
+          }: ${newSpeed.toFixed(2)} km/h`;
           console.log(message);
           if (socket && socket.connected) {
             socket.emit("overSpeedAlert", { busId: bus._id, message });

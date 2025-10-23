@@ -172,21 +172,23 @@ async function getBusDetailsByRole(role, userId) {
   }
 }
 
-router.get("/", checkUserExistenceAndRedirect(), async (req, res) => {
-  try {
-    const workerId = req.worker?._id;
+router.get(
+  "/",
+  checkUserExistenceAndRedirect(),
+  busAuthLoggedIn,
+  async (req, res) => {
+    try {
+      const workerId = req.worker?._id;
 
-    const busId = await client.get(`operatorTemBus:${workerId}`);
-
-    return res.render("DC/index.ejs", {
-      user: req.worker,
-      busLogged: !!busId,
-    });
-  } catch (error) {
-    console.error("Error in / route:", error);
-    return res.status(500).send("Internal server error.");
+      return res.render("DC/index.ejs", {
+        user: req.worker,
+      });
+    } catch (error) {
+      console.error("Error in / route:", error);
+      return res.status(500).send("Internal server error.");
+    }
   }
-});
+);
 
 router.post(
   "/api/save-fcm-token",
@@ -548,6 +550,7 @@ async function busAuthLoggedIn(req, res, next) {
       );
 
       if (decoded) {
+        console.log("Already logged  in");
         return res.redirect("/DC/PB");
       }
     }

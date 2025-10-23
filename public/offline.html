@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Offline Mode</title>
+  <style>
+    /* ===== Base Reset ===== */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: "Inter", "Segoe UI", Roboto, sans-serif;
+    }
+
+    body {
+      background-color: #f5f6fa;
+      color: #1c1c1e;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+    }
+
+    /* ===== Header / Branding ===== */
+    header {
+      position: absolute;
+      top: 20px;
+      left: 40px;
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: #2a5298;
+      letter-spacing: 0.5px;
+    }
+
+    /* ===== Main Section ===== */
+    main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 1.5rem;
+      width: 100%;
+    }
+
+    .icon {
+      font-size: 60px;
+      margin-bottom: 1rem;
+      color: #2a5298;
+    }
+
+    h1 {
+      font-size: 2rem;
+      font-weight: 600;
+      margin-bottom: 0.75rem;
+    }
+
+    p {
+      font-size: 1rem;
+      line-height: 1.6;
+      color: #4a4a4a;
+      margin-bottom: 2rem;
+      max-width: 500px;
+    }
+
+    button {
+      background-color: #2a5298;
+      color: #fff;
+      border: none;
+      padding: 0.9rem 1.8rem;
+      border-radius: 6px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+
+    button:hover {
+      background-color: #1e3c72;
+    }
+
+    /* ===== Footer ===== */
+    footer {
+      position: absolute;
+      bottom: 20px;
+      width: 100%;
+      text-align: center;
+      color: #999;
+      font-size: 0.85rem;
+    }
+
+    /* ===== Dark Mode ===== */
+    @media (prefers-color-scheme: dark) {
+      body {
+        background-color: #121212;
+        color: #eaeaea;
+      }
+      header {
+        color: #4a90e2;
+      }
+      p {
+        color: #ccc;
+      }
+      button {
+        background-color: #3a7bd5;
+      }
+      button:hover {
+        background-color: #326cc0;
+      }
+      footer {
+        color: #777;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <header>Tmu Transport</header>
+
+  <main>
+    <div class="icon">📡</div>
+    <h1>You're Offline</h1>
+    <p>It seems your internet connection is currently unavailable.<br>
+       Please check your connection and try again.</p>
+    <button onclick="location.reload()">Retry Connection</button>
+  </main>
+
+  <footer>
+    &copy; 2025 Tmu Transport. All rights reserved.
+  </footer>
+</body>
+</html> 

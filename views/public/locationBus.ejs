@@ -239,7 +239,8 @@
                            // Handle live location updates
                            socket.on("receivelocation", (data) => {
                              console.log("📡 Live update:", data);
-                             const { latitude, longitude, accuracy } = data;
+                             const { latitude, longitude, accuracy,speed } = data;
+                             console.log(`here is the speed ${speed}`)
 
                              if (busMarker) {
                                // Update marker position
@@ -302,8 +303,8 @@
 
 
                                                                                                                        //  Setting up Stops layer
-                                                                                                  const iconStopLayerGroup = L.layerGroup().addTo(map);
-                                                                                                  const circularStopLayerGroup=L.layerGroup().addTo(map)
+  const iconStopLayerGroup = L.layerGroup().addTo(map);
+         const circularStopLayerGroup=L.layerGroup().addTo(map)
 
                                                                                                                  const stopIconClass = L.Icon.extend({
                                                                                                              options: {

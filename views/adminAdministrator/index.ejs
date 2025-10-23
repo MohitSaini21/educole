@@ -25,7 +25,6 @@
     <link rel="stylesheet" href="/assets/css/style.css" />
     <!-- End layout styles -->
 
-    
     <style>
       .card {
         border: 1px solid #e0e0e0;
@@ -309,6 +308,26 @@
     <!-- endinject -->
     <!-- Plugin js for this page -->
 
+    <script>
+      // putting this script on every front page    parent dash, admin dasd driver dasdh =
+      function registerServiceWorker() {
+        if ("serviceWorker" in navigator) {
+          navigator.serviceWorker
+            .register("/firebase-messaging-sw.js")
+            .then(function (registration) {
+              console.log(
+                "Service Worker registered with scope: ",
+                registration.scope
+              );
+            })
+            .catch(function (err) {
+              console.log("Service Worker registration failed: ", err);
+            });
+        }
+      }
+
+      window.addEventListener("load", registerServiceWorker);
+    </script>
     <!-- End plugin js for this page -->
     <!-- inject:js -->
     <script src="/assets/js/off-canvas.js"></script>

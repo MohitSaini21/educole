@@ -25,6 +25,8 @@ export async function setAllRouteStops() {
     }
 
     console.log("hey I am the one who got a job to set up the redis");
+
+    await client.flushAll();
     const buses = await Bus.find().select("_id routeStops iconPhoto busNumber");
 
     for (const bus of buses) {

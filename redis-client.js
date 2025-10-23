@@ -44,8 +44,7 @@ startRedisClient();
 process.on("SIGINT", async () => {
   try {
     console.log("🚨 Server shutting down. Closing Redis connections...");
-    // ⚠️ Flush only if necessary
-    // await client.flushAll();
+
 
     await Promise.all([client.quit(), pubClient.quit(), subClient.quit()]);
 
