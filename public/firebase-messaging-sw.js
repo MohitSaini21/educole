@@ -38,95 +38,92 @@ const messaging = firebase.messaging();
 //   self.registration.showNotification(notificationTitle, notificationOptions);
 // });
 
+// 🧠 Define versioned cache name (update when files change)
+const CACHE_NAME = "mywebapp-cache-v1";
 
+// 🧱 Pre-cache these static assets during installation
+const ASSETS_TO_CACHE = [
+  "/",
+  "/index.html",
+  "/offline.html",
+  "/public/css/bootstrap.css",
+  "/assets/manifest.json",
+  "/assets/homeLoader.css",
+  "/public/css/style.css",
+  "/public/css/responsive.css",
+];
 
-// // 🧠 Define versioned cache name (update when files change)
-// const CACHE_NAME = "mywebapp-cache-v1";
+// -------------------------------------------------------------
+// 🧱 1️⃣ INSTALL EVENT → Cache essential files for offline use
+// -------------------------------------------------------------
+self.addEventListener("install", (event) => {
+  console.log("[ServiceWorker] Install event triggered ✅");
 
-// // 🧱 Pre-cache these static assets during installation
-// const ASSETS_TO_CACHE = [
-//   "/",
-//   "/index.html",
-//   "/offline.html",
-//   "/favicon.ico",
-//   "/manifest.json",
-//   "/styles.css",       // Add your real CSS files here
-//   "/script.js",        // Add your main JS
-//   "/logo192.png",      // Example icon
-//   "/logo512.png",      // Example icon
-// ];
+  event.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => {
+      console.log("[ServiceWorker] Caching all core assets...");
+      return cache.addAll(ASSETS_TO_CACHE);
+    })
+  );
 
-// // -------------------------------------------------------------
-// // 🧱 1️⃣ INSTALL EVENT → Cache essential files for offline use
-// // -------------------------------------------------------------
-// self.addEventListener("install", (event) => {
-//   console.log("[ServiceWorker] Install event triggered ✅");
+  // Force the waiting service worker to activate immediately
+  self.skipWaiting();
+});
 
-//   event.waitUntil(
-//     caches.open(CACHE_NAME).then((cache) => {
-//       console.log("[ServiceWorker] Caching all core assets...");
-//       return cache.addAll(ASSETS_TO_CACHE);
-//     })
-//   );
+// -------------------------------------------------------------
+// 🧹 2️⃣ ACTIVATE EVENT → Clean up old caches
+// -------------------------------------------------------------
+self.addEventListener("activate", (event) => {
+  console.log("[ServiceWorker] Activate event triggered 🧹");
 
-//   // Force the waiting service worker to activate immediately
-//   self.skipWaiting();
-// });
+  event.waitUntil(
+    caches.keys().then((cacheNames) => {
+      return Promise.all(
+        cacheNames.map((name) => {
+          if (name !== CACHE_NAME) {
+            console.log("[ServiceWorker] Deleting old cache:", name);
+            return caches.delete(name);
+          }
+        })
+      );
+    })
+  );
 
-// // -------------------------------------------------------------
-// // 🧹 2️⃣ ACTIVATE EVENT → Clean up old caches
-// // -------------------------------------------------------------
-// self.addEventListener("activate", (event) => {
-//   console.log("[ServiceWorker] Activate event triggered 🧹");
+  // Claim control of all clients (tabs) immediately
+  self.clients.claim();
+});
 
-//   event.waitUntil(
-//     caches.keys().then((cacheNames) => {
-//       return Promise.all(
-//         cacheNames.map((name) => {
-//           if (name !== CACHE_NAME) {
-//             console.log("[ServiceWorker] Deleting old cache:", name);
-//             return caches.delete(name);
-//           }
-//         })
-//       );
-//     })
-//   );
+// -------------------------------------------------------------
+// 🌐 3️⃣ FETCH EVENT → Intercept network requests
+// -------------------------------------------------------------
+self.addEventListener("fetch", (event) => {
+  // For non-GET requests (like POST/PUT), skip caching
+  if (event.request.method !== "GET") return;
 
-//   // Claim control of all clients (tabs) immediately
-//   self.clients.claim();
-// });
+  event.respondWith(
+    caches.match(event.request).then((cachedResponse) => {
+      // ✅ Serve from cache if available
+      if (cachedResponse) {
+        console.log("[ServiceWorker] Serving from cache:", event.request.url);
+        return cachedResponse;
+      }
 
-// // -------------------------------------------------------------
-// // 🌐 3️⃣ FETCH EVENT → Intercept network requests
-// // -------------------------------------------------------------
-// self.addEventListener("fetch", (event) => {
-//   // For non-GET requests (like POST/PUT), skip caching
-//   if (event.request.method !== "GET") return;
-
-//   event.respondWith(
-//     caches.match(event.request).then((cachedResponse) => {
-//       // ✅ Serve from cache if available
-//       if (cachedResponse) {
-//         console.log("[ServiceWorker] Serving from cache:", event.request.url);
-//         return cachedResponse;
-//       }
-
-//       // 🌐 Else, try fetching from the network
-//       return fetch(event.request)
-//         .then((networkResponse) => {
-//           // 🧠 Dynamic caching: store new responses in cache
-//           return caches.open(CACHE_NAME).then((cache) => {
-//             // Clone response because it's a stream
-//             cache.put(event.request, networkResponse.clone());
-//             return networkResponse;
-//           });
-//         })
-//         .catch(() => {
-//           // ⚠️ If offline, show fallback page
-//           if (event.request.mode === "navigate") {
-//             return caches.match("/offline.html");
-//           }
-//         });
-//     })
-//   );
-// });
+      // 🌐 Else, try fetching from the network
+      return fetch(event.request)
+        .then((networkResponse) => {
+          // 🧠 Dynamic caching: store new responses in cache
+          return caches.open(CACHE_NAME).then((cache) => {
+            // Clone response because it's a stream
+            cache.put(event.request, networkResponse.clone());
+            return networkResponse;
+          });
+        })
+        .catch(() => {
+          // ⚠️ If offline, show fallback page
+          if (event.request.mode === "navigate") {
+            return caches.match("/offline.html");
+          }
+        });
+    })
+  );
+});

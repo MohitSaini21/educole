@@ -65,7 +65,7 @@ const complaintLimiter = rateLimit({
 });
 
 router.get("/", (req, res) => {
-  return res.render("public/index.ejs");
+  return res.render("index.html");
 });
 
 router.post("/", async (req, res) => {
