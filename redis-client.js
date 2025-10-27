@@ -37,8 +37,6 @@ export const startRedisClient = async () => {
   }
 };
 
-
-
 // Handle process termination gracefully
 process.on("SIGINT", async () => {
   try {

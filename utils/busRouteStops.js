@@ -16,6 +16,7 @@ export async function setAllRouteStops() {
       });
 
       if (!(lockKey === "OK")) {
+        console.log("I missed  the locked");
         return;
       }
     } catch (err) {
@@ -24,9 +25,9 @@ export async function setAllRouteStops() {
     }
 
     console.log("hey I am the one who got a job to set up the redis");
+    await flushAllExceptOne(client, "startUpKey");
 
     const buses = await Bus.find().select("_id routeStops iconPhoto busNumber");
-    await client.flushAll();
 
     for (const bus of buses) {
       await client.hSet(
@@ -47,9 +48,12 @@ export async function setAllRouteStops() {
 
     const fields = await client.hKeys("routeStopMap");
     console.log(fields);
-    setTimeout(async () => {
-      await client.del("startUpKey");
-    }, 21000);
+    setTimeout(
+      async () => {
+        await client.del("startUpKey");
+      },
+      1000 * 60 * 5
+    );
   } catch (err) {
     console.error("❌ Failed to cache bus data:", err);
   }
@@ -68,4 +72,26 @@ export async function getBusCacheData(busId) {
     console.error(`❌ Error fetching bus cache for ${busId}:`, err);
     return null;
   }
+}
+
+async function flushAllExceptOne(client, keyToKeep) {
+  let cursor = "0";
+  do {
+    const result = await client.scan(cursor, {
+      MATCH: "*",
+      COUNT: 100,
+    });
+
+    const nextCursor = result.cursor;
+    const keys = result.keys;
+
+    cursor = nextCursor;
+
+    // Filter out the key you want to keep
+    const keysToDelete = keys.filter((k) => k !== keyToKeep);
+
+    if (keysToDelete.length > 0) {
+      await client.del(keysToDelete);
+    }
+  } while (cursor !== "0");
 }

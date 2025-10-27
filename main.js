@@ -130,6 +130,10 @@ app.use((err, req, res, next) => {
 const io = new Server(server, {
   pingInterval: 5000, // every 5s send ping
   pingTimeout: 3000, // wait 3s for pong before dropping
+  cors: {
+    origin: "*", // या तुम्हारे frontend का origin
+    methods: ["GET", "POST"],
+  },
 });
 
 // Attach Redis adapter
@@ -176,6 +180,9 @@ io.use((socket, next) => {
 });
 
 io.on("connection", async (socket) => {
+  // if (!socket.adapter) return;
+  // const isRealClient = socket.request.headers["user-agent"] !== undefined;
+  // if (!isRealClient) return; // Ignore ghost connections from Redis
   const query = socket.handshake.query;
 
   if (query.busId) {
@@ -305,7 +312,7 @@ io.on("connection", async (socket) => {
   });
 
   // TrackBehind
-  // Inside io.on("connection", (socket) => { ... })
+
   socket.on("trackBehind", async (data, callback) => {
     const { busId } = data;
     const key = `busSocketsId:${busId}`;
@@ -1245,6 +1252,7 @@ async function removeSocketFromRedis(distinctName, key, socket, label) {
 import { startRedisClient } from "./redis-client.js";
 const startServer = async () => {
   try {
+    console.log(`process pid  is ${process.pid}`);
     await ConnectDB("mongodb://localhost:27017/educoleDB");
     const existingAdministrator = await CORE.findOne({ role: "administrator" });
     if (!existingAdministrator) {
@@ -1279,11 +1287,12 @@ const startServer = async () => {
     console.error("❌ Failed to start server:", err);
   }
 };
+
 setTimeout(
   () => {
     startServer();
   },
-  (Math.random() * 4 + 1) * 1000
+  Math.random() * 1000 + 500
 );
 
 async function getAllBusObjectIds() {

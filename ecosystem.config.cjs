@@ -5,7 +5,7 @@ module.exports = {
       script: "server.js",
       instances: "max",
       exec_mode: "cluster",
-      sticky: true,
+      sticky: true, 
       env: {
         NODE_ENV: "production",
       },
