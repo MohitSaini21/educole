@@ -7,8 +7,6 @@ import BusActivityLog from "./model/busTrack.js";
 import { config } from "dotenv"; // For environment variable management
 import { logStopArrivalToMemory } from "./utils/logsMemory.js";
 
-import Redlock from "redlock";
-
 import FCM from "./model/FCM.js";
 import { dcRouter } from "./routes/DC.js";
 import { getAllStopsForBus } from "./utils/reachedStops.js";
@@ -177,32 +175,9 @@ io.use((socket, next) => {
   }
 });
 
-async function registerSocketOnRedis(distinctName, key, socket, label = "") {
-  const redisKey = `${distinctName}:${key}`;
-  await client.sAdd(redisKey, socket.id);
-
-  const allSockets = await client.sMembers(redisKey);
-  console.log(
-    `✅ New connection${label ? ` (${label})` : ""} for ${key} with socketId: ${
-      socket.id
-    }`
-  );
-  console.log(`📡 Current connections for ${redisKey}:`, allSockets);
-}
-
-async function removeSocketFromRedis(distinctName, key, socket, label) {
-  const redisKey = `${distinctName}:${key}`;
-  const removedCount = await client.sRem(redisKey, socket.id);
-
-  if (removedCount > 0) {
-    console.log(`❌ Removed socket ${socket.id} from ${label} for ${key}.`);
-  }
-}
-
 io.on("connection", async (socket) => {
   const query = socket.handshake.query;
 
-  // 🎯 Priority 1: Public Viewer (no auth)
   if (query.busId) {
     const busId = query.busId;
     socket.busId = busId;
@@ -268,6 +243,7 @@ io.on("connection", async (socket) => {
       console.log(
         "Let All possible process drop bus socket connection firt got it ."
       );
+
       socket.disconnect(true);
       return;
     }
@@ -342,12 +318,6 @@ io.on("connection", async (socket) => {
         return callback("Bus is offline (no socket ID found).");
       }
 
-      // 2. Check if socket is still connected
-      const targetSocket = io.sockets.sockets.get(socketId);
-      if (!targetSocket || targetSocket.disconnected) {
-        return callback("Bus is offline (socket disconnected).");
-      }
-
       // 3. Emit event and wait for response with timeout
       const result = await new Promise((resolve, reject) => {
         let isResolved = false;
@@ -366,7 +336,7 @@ io.on("connection", async (socket) => {
               isResolved = true;
               resolve("Bus did not respond in time (timeout).");
             }
-          }, 5000);
+          }, 6000);
         } catch (emitError) {
           reject(emitError); // Emit failed (rare)
         }
@@ -1250,7 +1220,29 @@ io.on("connection", async (socket) => {
     }
   });
 });
+async function registerSocketOnRedis(distinctName, key, socket, label = "") {
+  const redisKey = `${distinctName}:${key}`;
+  await client.sAdd(redisKey, socket.id);
 
+  const allSockets = await client.sMembers(redisKey);
+  console.log(
+    `✅ New connection${label ? ` (${label})` : ""} for ${key} with socketId: ${
+      socket.id
+    }`
+  );
+  console.log(`📡 Current connections for ${redisKey}:`, allSockets);
+}
+
+async function removeSocketFromRedis(distinctName, key, socket, label) {
+  const redisKey = `${distinctName}:${key}`;
+  const removedCount = await client.sRem(redisKey, socket.id);
+
+  if (removedCount > 0) {
+    console.log(`❌ Removed socket ${socket.id} from ${label} for ${key}.`);
+  }
+}
+
+import { startRedisClient } from "./redis-client.js";
 const startServer = async () => {
   try {
     await ConnectDB("mongodb://localhost:27017/educoleDB");
@@ -1271,6 +1263,8 @@ const startServer = async () => {
     }
 
     console.log("✅ MongoDB connected successfully.");
+    // Call startRedisClient function
+    await startRedisClient();
 
     await setAllRouteStops();
     console.log("✅ All routeStops loaded into memory.");
@@ -1285,8 +1279,12 @@ const startServer = async () => {
     console.error("❌ Failed to start server:", err);
   }
 };
-
-startServer();
+setTimeout(
+  () => {
+    startServer();
+  },
+  (Math.random() * 4 + 1) * 1000
+);
 
 async function getAllBusObjectIds() {
   try {

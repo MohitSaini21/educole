@@ -159,6 +159,10 @@ self.addEventListener("fetch", (event) => {
   // Skip non-GET requests (POST, PUT, DELETE, etc.)
   if (event.request.method !== "GET") return;
 
+  const url = event.request.url;
+  // Skip socket.io and API calls
+  if (url.includes("/socket.io/") || url.includes("/api/")) return;
+
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
       if (cachedResponse) {
@@ -180,6 +184,11 @@ self.addEventListener("fetch", (event) => {
           if (event.request.mode === "navigate") {
             return caches.match("/offline.html");
           }
+          // ⚠️ Always return a valid Response
+          return new Response("Network error", {
+            status: 408,
+            statusText: "Network Error",
+          });
         });
     })
   );

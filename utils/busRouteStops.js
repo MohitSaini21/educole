@@ -13,7 +13,6 @@ export async function setAllRouteStops() {
     try {
       let lockKey = await client.set("startUpKey", "MohitSaini", {
         NX: true,
-        EX: 3600, // expires in 1 hour
       });
 
       if (!(lockKey === "OK")) {
@@ -26,8 +25,8 @@ export async function setAllRouteStops() {
 
     console.log("hey I am the one who got a job to set up the redis");
 
-    await client.flushAll();
     const buses = await Bus.find().select("_id routeStops iconPhoto busNumber");
+    await client.flushAll();
 
     for (const bus of buses) {
       await client.hSet(
@@ -48,7 +47,9 @@ export async function setAllRouteStops() {
 
     const fields = await client.hKeys("routeStopMap");
     console.log(fields);
-    await client.del("startUpKey");
+    setTimeout(async () => {
+      await client.del("startUpKey");
+    }, 21000);
   } catch (err) {
     console.error("❌ Failed to cache bus data:", err);
   }

@@ -657,7 +657,8 @@ async function startStreaming(
     <div class="col-md-12 grid-margin stretch-card" id="tagVideo" style="height: 60vh; position: relative;">
   <div class="card h-100">
     <div class="card-body p-0" style="height: 100%; position: relative;">
-      <video id="driverVideo" autoplay></video>
+   <video id="driverVideo" autoplay muted playsinline></video>
+
 
          <!-- Zoom/Control Panel -->
 <div
@@ -791,8 +792,10 @@ async function collectionIceCandidateInfo() {
     .getTracks()
     .forEach((track) => peerConnection.addTrack(track, mediaStream));
   const localVideo = document.getElementById("driverVideo");
+
   if (localVideo) {
     localVideo.srcObject = mediaStream;
+    // No need to set muted again — it’s already muted from HTML
   }
 
   peerConnection.onicecandidate = (event) => {

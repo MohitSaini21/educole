@@ -17,7 +17,7 @@ client.on("error", (err) => {
 });
 
 // Connect to Redis and optionally flush all data on startup
-const startRedisClient = async () => {
+export const startRedisClient = async () => {
   try {
     // Connect all clients
     await Promise.all([
@@ -37,14 +37,12 @@ const startRedisClient = async () => {
   }
 };
 
-// Call startRedisClient function
-startRedisClient();
+
 
 // Handle process termination gracefully
 process.on("SIGINT", async () => {
   try {
     console.log("🚨 Server shutting down. Closing Redis connections...");
-
 
     await Promise.all([client.quit(), pubClient.quit(), subClient.quit()]);
 

@@ -175,7 +175,7 @@ async function getBusDetailsByRole(role, userId) {
 router.get(
   "/",
   checkUserExistenceAndRedirect(),
-
+  busAuthLoggedIn,
   async (req, res) => {
     try {
       return res.render("DC/index.ejs", {
@@ -187,8 +187,6 @@ router.get(
     }
   }
 );
-
-
 
 router.post(
   "/api/save-fcm-token",

@@ -41,7 +41,7 @@ const messaging = firebase.messaging();
 // 🧠 Define versioned cache name (update when files change)
 
 // 🧱 Pre-cache these static assets during installation
-const CACHE_NAME = "v1.2";
+const CACHE_NAME = "v1.4";
 
 const ASSETS_TO_CACHE = [
   "/offline.html",
@@ -133,9 +133,13 @@ self.addEventListener("activate", (event) => {
 // -------------------------------------------------------------
 // 🌐 3️⃣ FETCH EVENT → Intercept network requests
 // -------------------------------------------------------------
-self.addEventListener("fetch", (event) => {
-  // Skip non-GET requests (POST, PUT, DELETE, etc.)
+sself.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
+
+  const url = event.request.url;
+
+  // Skip socket.io and API calls
+  if (url.includes("/socket.io/") || url.includes("/api/")) return;
 
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
@@ -144,20 +148,25 @@ self.addEventListener("fetch", (event) => {
         return cachedResponse;
       }
 
-      // 🌐 Fetch from network but DO NOT add to cache
+      // Fetch from network
       return fetch(event.request)
         .then((networkResponse) => {
           console.log(
-            "[ServiceWorker] Fetched from network (not cached):",
+            "[ServiceWorker] Fetched from network:",
             event.request.url
           );
           return networkResponse;
         })
         .catch(() => {
-          // ⚠️ If offline and it's a navigation request, show fallback
+          // If offline and it's a navigation request
           if (event.request.mode === "navigate") {
             return caches.match("/offline.html");
           }
+          // ⚠️ Always return a valid Response
+          return new Response("Network error", {
+            status: 408,
+            statusText: "Network Error",
+          });
         });
     })
   );
