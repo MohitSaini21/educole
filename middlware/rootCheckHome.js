@@ -2,6 +2,7 @@ import jwt from "jsonwebtoken"; // Importing the JWT library to handle JSON Web 
 
 // Middleware function to check if the user is authenticated and prevent access to the home page if logged in
 export const checkAuthHome = (req, res, next) => {
+  console.log("everythign is in perfect working order");
   try {
     // Step 1: Get the authentication token from the cookies sent by the client
     const token = req.cookies.authToken;

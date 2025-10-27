@@ -44,7 +44,7 @@ async function getFcmToken(retryCount) {
           localStorage.setItem("fcmToken", token);
           localStorage.setItem("fcmTokenCreatedAt", createdAt);
           const expiryDate = new Date();
-          expiryDate.setFullYear(expiryDate.getFullYear() + 1);
+          expiryDate.setMonth(expiryDate.getMonth() + 1);
 
           localStorage.setItem("fcmTokenExpiryDate", expiryDate.toISOString());
 
@@ -86,6 +86,8 @@ async function getFcmToken(retryCount) {
 export async function sendTokenToServer(token, expiryDate) {
   try {
     // Send the token to the backend
+
+    expiryDate.setDate(expiryDate.getDate() + 1);
     const response = await fetch("/admin/api/save-fcm-token", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -113,7 +115,7 @@ export async function sendTokenToServer(token, expiryDate) {
 export function fetchToken() {
   if ("serviceWorker" in navigator) {
     navigator.serviceWorker
-      .register("/firebase-messaging-sw.js")
+      .register("/sw.js")
       .then(function (registration) {
         console.log(
           "Service Worker registered with scope: ",

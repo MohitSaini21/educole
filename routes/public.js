@@ -64,9 +64,8 @@ const complaintLimiter = rateLimit({
   },
 });
 
-router.get("/", (req, res) => {
-  return res.render("index.html");
-});
+
+
 
 router.post("/", async (req, res) => {
   try {

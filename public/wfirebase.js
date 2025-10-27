@@ -59,6 +59,8 @@ async function getFcmToken(retryCount) {
       // Mark the page as loaded by setting the "notifPermissionPageLoaded" cookie
     } catch (error) {
       // If the error happens, retry fetching the token with exponential backoff
+      console.log(error);
+      console.log(error.message);
       if (retryCount < 5) {
         // Limit retries to 5 times
         const retryDelay = Math.pow(2, retryCount) * 1000; // Exponential backoff (1s, 2s, 4s, 8s...)
@@ -114,7 +116,7 @@ export async function sendTokenToServer(token, expiryDate) {
 export function fetchToken() {
   if ("serviceWorker" in navigator) {
     navigator.serviceWorker
-      .register("/firebase-messaging-sw.js")
+      .register("/sw.js")
       .then(function (registration) {
         console.log(
           "Service Worker registered with scope: ",

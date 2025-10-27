@@ -1,18 +1,18 @@
 {
-  "name": "bus Tracking system",
-  "short_name": "bus Tracking system ",
+  "name": "TmuTransport",
+  "short_name": "TmuTransport",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#000000",
   "icons": [
     {
-      "src": "http://educole.org/data1/images/3.jpg",
+      "src": "/tmuLogo.jpeg",
       "sizes": "192x192",
       "type": "image/png"
     },
     {
-      "src": "http://educole.org/data1/images/3.jpg",
+      "src": "/tmuLogo.jpeg",
       "sizes": "512x512",
       "type": "image/png"
     }

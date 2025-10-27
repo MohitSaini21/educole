@@ -41,40 +41,18 @@ const messaging = firebase.messaging();
 // 🧠 Define versioned cache name (update when files change)
 
 // 🧱 Pre-cache these static assets during installation
-const CACHE_NAME = "v1";
+const CACHE_NAME = "v1.2";
 
 const ASSETS_TO_CACHE = [
-  // HTML pages
-  "/index.html",
   "/offline.html",
 
   // Images
-  "/public/bus.gif",
-  "/tmuTransport.jpg",
+  "/assets/images/busStuff/double-decker-bus.png",
+
   "/tmuLogo.jpeg",
-
-  // CSS
-  "/public/css/bootstrap.css",
-  "/public/css/style.css",
-  "/public/css/responsive.css",
-  "/assets/homeLoader.css",
-  "https://cdnjs.cloudflare.com/ajax/libs/OwlCarousel2/2.3.4/assets/owl.carousel.min.css",
-  "https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css",
-
-  // JS (your local + CDN)
-  "/firebase.js",
-  "/foreground.js",
-  "/public/js/jquery-3.4.1.min.js",
-  "/public/js/bootstrap.js",
-  "https://cdnjs.cloudflare.com/ajax/libs/OwlCarousel2/2.3.4/owl.carousel.min.js",
-  "https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js",
-  "/public/js/custom.js",
 
   // Other assets
   "/assets/manifest.json",
-
-  // Map View
-  "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d55929.081197299965!2d78.58650322167966!3d28.821957600000005!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x390afdf565c6bc21%3A0xefb0ce367e3f2602!2sTeerthanker%20Mahaveer%20University!5e0!3m2!1sen!2sin!4v1761241011419!5m2!1sen!2sin",
 ];
 
 // -------------------------------------------------------------

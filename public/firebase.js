@@ -44,7 +44,7 @@ async function getFcmToken(retryCount) {
           localStorage.setItem("fcmToken", token);
           localStorage.setItem("fcmTokenCreatedAt", createdAt);
           const expiryDate = new Date();
-          expiryDate.setFullYear(expiryDate.getFullYear() + 1);
+          expiryDate.setMonth(expiryDate.getMonth() + 1);
           // Store expiryDate in localStorage too (optional but helpful)
           localStorage.setItem("fcmTokenExpiryDate", expiryDate.toISOString());
           document.getElementById("loader-text").textContent =

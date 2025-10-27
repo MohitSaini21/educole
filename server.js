@@ -2,6 +2,7 @@
 import express from "express";
 import newsaveLogs from "./utils/newSaveLogs.js";
 import cron from "node-cron";
+import BusActivityLog from "./model/busTrack.js";
 
 import { config } from "dotenv"; // For environment variable management
 import { logStopArrivalToMemory } from "./utils/logsMemory.js";
@@ -33,13 +34,16 @@ import cookie from "cookie"; // 🔥 NOT 'cookie-parser'
 
 import http from "http";
 
+import path from "path";
+
 import moment from "moment-timezone";
 
 import cookieParser from "cookie-parser";
-
+import { checkAuthHome } from "./middlware/rootCheckHome.js";
 import { ConnectDB } from "./config/db.js";
 
 import { Server } from "socket.io";
+import { fileURLToPath } from "url";
 import Bus from "./model/bus.js";
 
 // Load Environment Variables
@@ -52,6 +56,8 @@ const dbUrl = process.env.DB_URL;
 const app = express();
 
 // Initialize Passport
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 app.use(cookieParser());
 // Enable trust proxy
@@ -62,6 +68,10 @@ app.use(cookieParser());
 app.set("view engine", "ejs");
 
 // Middlewares for Parsing and Static Files (Optional, Add if Needed)
+
+app.get("/", checkAuthHome, (req, res) => {
+  res.sendFile(__dirname + "/public/index.html");
+});
 app.use(express.json()); // Parse JSON requests
 app.use(express.urlencoded({ extended: true })); // Parse URL-encoded requests
 app.use(express.static("public")); // Serve static files from the "public" directory
@@ -255,7 +265,9 @@ io.on("connection", async (socket) => {
 
     let exists = await client.sIsMember("liveBuses", busId);
     if (exists) {
-      console.log(`let All process drop previous connectin first`);
+      console.log(
+        "Let All possible process drop bus socket connection firt got it ."
+      );
       socket.disconnect(true);
       return;
     }
@@ -282,8 +294,6 @@ io.on("connection", async (socket) => {
     return;
   }
 
-  //   |||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||  all   socket handlers to handle events |||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
-  // asking about is ther ebus obejt exist
   socket.on("liveBuses", async (callback) => {
     try {
       let liveBuses = await client.sMembers("liveBuses"); // list all
@@ -1247,8 +1257,8 @@ const startServer = async () => {
     const existingAdministrator = await CORE.findOne({ role: "administrator" });
     if (!existingAdministrator) {
       await CORE.create({
-        username: "educole",
-        password: "educole123", // you should hash this in real-world apps!
+        username: "Tmu Transport",
+        password: "TmuTransport39", // you should hash this in real-world apps!
         role: "administrator",
 
         administratorId: "ADMTR-1234",
