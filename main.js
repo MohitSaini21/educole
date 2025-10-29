@@ -315,6 +315,21 @@ io.on("connection", async (socket) => {
 
   // TrackBehind
 
+  // events realted to trackBehind
+
+  socket.on("trackBehindMsg", async (busId, reply) => {
+    if (busId && reply) {
+      const adcbSockets = await client.sMembers(
+        `administratorConnectionsBus:${busId}`
+      );
+      if (adcbSockets.length > 0) {
+        for (const socketId of adcbSockets) {
+          io.to(socketId).emit("trackBehindMsg", reply);
+        }
+      }
+    }
+  });
+
   socket.on("trackBehind", async (data, callback) => {
     const { busId } = data;
     const key = `busSocketsId:${busId}`;
@@ -326,48 +341,8 @@ io.on("connection", async (socket) => {
       if (!socketId) {
         return callback("Bus is offline (no socket ID found).");
       }
-
-      // 3. Emit event and wait for response with timeout
-      const result = await new Promise((resolve, reject) => {
-        let isResolved = false;
-
-        try {
-          io.to(socketId)
-            .timeout(10000)
-            .emit("check", "testing string", (response) => {
-              if (!isResolved) {
-                isResolved = true;
-
-                // Log detailed info about the response
-                console.log("🚨 Received callback from client:");
-                console.log("Type:", typeof response);
-                console.log("Instance of Error?", response instanceof Error);
-                console.log("Raw response:", response);
-                if (response instanceof Error) {
-                  console.log("Error message:", response.message);
-                  console.log("Error stack:", response.stack);
-                }
-
-                resolve(response); // Client responded
-              }
-            });
-
-          setTimeout(() => {
-            if (!isResolved) {
-              isResolved = true;
-              resolve("Bus did not respond in time (timeout).");
-            }
-          }, 6000);
-        } catch (emitError) {
-          console.log(emitError);
-          reject("Errror in Emitting"); // Emit failed (rare)
-        }
-      });
-
-      console.log(
-        `here isthe resutl htat is hent snet to the administraotr ${result}`
-      );
-      callback(result);
+      io.to(socketId).emit("check", "testing string");
+      callback("Signal has been sent sucesssfullly");
     } catch (error) {
       console.error("Error in trackBehind handler:", error);
       callback("Internal server error while handling trackBehind.");
@@ -386,37 +361,9 @@ io.on("connection", async (socket) => {
         return callback("Bus is offline (no socket ID found).");
       }
 
-      // 2. Check if socket is still connected
-      const targetSocket = io.sockets.sockets.get(socketId);
-      if (!targetSocket || targetSocket.disconnected) {
-        return callback("Bus is offline (socket disconnected).");
-      }
+      io.to(socketId).emit("stopTrackBehind", "testing string");
 
-      // 3. Emit event and wait for response with timeout
-      const result = await new Promise((resolve, reject) => {
-        let isResolved = false;
-
-        try {
-          targetSocket.emit("stopTrackBehind", "testing string", (response) => {
-            if (!isResolved) {
-              isResolved = true;
-              resolve(response); // Client responded
-            }
-          });
-
-          // Timeout after 5 seconds
-          setTimeout(() => {
-            if (!isResolved) {
-              isResolved = true;
-              resolve("Bus did not respond in time (timeout).");
-            }
-          }, 5000);
-        } catch (emitError) {
-          reject(emitError); // Emit failed (rare)
-        }
-      });
-
-      callback(result);
+      callback("Stop signal has been sent");
     } catch (error) {
       console.error("Error in trackBehind handler:", error);
       callback("Internal server error while handling trackBehind.");

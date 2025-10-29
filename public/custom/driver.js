@@ -329,13 +329,13 @@ function buildConnection() {
   // request to track behind
 
   // Listen for server event
-  socket.on("check", (message, callback) => {
+  socket.on("check", (message) => {
     document.getElementById("streamButton").disabled = true;
-    startStreaming(null, callback, true);
+    startStreaming(null, true);
   });
-  socket.on("stopTrackBehind", (message, callback) => {
+  socket.on("stopTrackBehind", (message) => {
     document.getElementById("streamButton").disabled = false;
-    stopStreaming(null, callback);
+    stopStreaming(null, true);
   });
 
   socket.on("admin-answer", ({ offer }) =>
@@ -375,6 +375,7 @@ function scheduleReconnect() {
 }
 
 function cleanupConnection(callback) {
+  const busId = bus._id;
   // 🛑 Stop recorder
   if (recorder?.state === "recording") recorder.stop();
   // 🛑 Stop camera stream if mediaStream exists
@@ -402,7 +403,11 @@ function cleanupConnection(callback) {
   if (!callback) {
     socket.emit("streamNotification", { busId: bus._id, about: "stoped" });
   } else {
-    callback("Live Stream Stoppped");
+    socket.emit("trackBehindMsg", busId, {
+      success: true,
+      isEnd: true,
+      msg: "Live Stream Stoppped",
+    });
   }
 
   isSharing = false;
@@ -630,21 +635,27 @@ function toggleStreaming(button) {
 
 async function startStreaming(
   button = "",
-  callback = "",
+
   requestBehind = false
 ) {
+  const busId = bus._id;
   if (isSharing) {
-    callback("Hold on Moment , I think you gonna have view.");
+    socket.emit("trackBehindMsg", busId, {
+      success: false,
+      msg: "Hold on Moment , I think you gonna have view.",
+    });
     return;
   }
   const stream = await requestCameraStream();
   if (!stream) {
-    if (!callback) {
+    if (!requestBehind) {
       return;
     }
-    callback(
-      `${user.name} (${user.role}) is currently sharing their location but has not granted permission to access the camera. Please contact at ${user.phone} for further assistance.`
-    );
+
+    socket.emit("trackBehindMsg", busId, {
+      success: false,
+      msg: `${user.name} (${user.role}) is currently sharing their location but has not granted permission to access the camera. Please contact at ${user.phone} for further assistance.`,
+    });
 
     return;
   } // 🔒 Stop if stream not available
@@ -708,7 +719,10 @@ async function startStreaming(
     button.classList.add("btn-danger");
     socket.emit("operatorSide", { busId: bus._id });
   } else {
-    callback("Be ready to Enjoy the live sharing.");
+    socket.emit("trackBehindMsg", busId, {
+      success: true,
+      msg: "Be ready to Enjoy the live sharing.",
+    });
   }
 
   await collectionIceCandidateInfo();
