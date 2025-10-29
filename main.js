@@ -332,14 +332,26 @@ io.on("connection", async (socket) => {
         let isResolved = false;
 
         try {
-          targetSocket.emit("check", "testing string", (response) => {
-            if (!isResolved) {
-              isResolved = true;
-              resolve(response); // Client responded
-            }
-          });
+          io.to(socketId)
+            .timeout(10000)
+            .emit("check", "testing string", (response) => {
+              if (!isResolved) {
+                isResolved = true;
 
-          // Timeout after 5 seconds
+                // Log detailed info about the response
+                console.log("🚨 Received callback from client:");
+                console.log("Type:", typeof response);
+                console.log("Instance of Error?", response instanceof Error);
+                console.log("Raw response:", response);
+                if (response instanceof Error) {
+                  console.log("Error message:", response.message);
+                  console.log("Error stack:", response.stack);
+                }
+
+                resolve(response); // Client responded
+              }
+            });
+
           setTimeout(() => {
             if (!isResolved) {
               isResolved = true;
@@ -347,16 +359,21 @@ io.on("connection", async (socket) => {
             }
           }, 6000);
         } catch (emitError) {
-          reject(emitError); // Emit failed (rare)
+          console.log(emitError);
+          reject("Errror in Emitting"); // Emit failed (rare)
         }
       });
 
+      console.log(
+        `here isthe resutl htat is hent snet to the administraotr ${result}`
+      );
       callback(result);
     } catch (error) {
       console.error("Error in trackBehind handler:", error);
       callback("Internal server error while handling trackBehind.");
     }
   });
+
   socket.on("stopTrackBehind", async (data, callback) => {
     const { busId } = data;
     const key = `busSocketsId:${busId}`;

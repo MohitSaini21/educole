@@ -617,7 +617,7 @@ async function requestCameraStream() {
       safeSpeakHindi(errorMsg);
     }
 
-    return null; // 🔴 Stream failed
+    return false; // 🔴 Stream failed
   }
 }
 function toggleStreaming(button) {

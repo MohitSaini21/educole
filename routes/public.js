@@ -64,10 +64,7 @@ const complaintLimiter = rateLimit({
   },
 });
 
-
-
-
-router.post("/", async (req, res) => {
+router.post("/searchBus", async (req, res) => {
   try {
     const busNumber = req.body.inputValue?.toLowerCase().trim();
 

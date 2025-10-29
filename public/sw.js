@@ -44,15 +44,15 @@ const messaging = firebase.messaging();
 const CACHE_NAME = "v1.4";
 
 const ASSETS_TO_CACHE = [
-  "localhost:80/offline.html",
+  "/offline.html",
 
   // Images
-  "localhost:80/assets/images/busStuff/double-decker-bus.png",
+  "/assets/images/busStuff/double-decker-bus.png",
 
-  "localhost:80/tmuLogo.jpeg",
+  "/tmuLogo.jpeg",
 
   // Other assets
-  "localhost:80/assets/manifest.json",
+  "/assets/manifest.json",
 ];
 
 // -------------------------------------------------------------
@@ -133,7 +133,7 @@ self.addEventListener("activate", (event) => {
 // -------------------------------------------------------------
 // 🌐 3️⃣ FETCH EVENT → Intercept network requests
 // -------------------------------------------------------------
-sself.addEventListener("fetch", (event) => {
+self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
 
   const url = event.request.url;

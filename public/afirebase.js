@@ -115,7 +115,7 @@ export async function sendTokenToServer(token, expiryDate) {
 export function fetchToken() {
   if ("serviceWorker" in navigator) {
     navigator.serviceWorker
-      .register("/sw.js")
+      .register("/sw.js", { type: "classic" }) // optional, default
       .then(function (registration) {
         console.log(
           "Service Worker registered with scope: ",
