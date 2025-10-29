@@ -220,7 +220,6 @@ function buildConnection() {
     timeout: 15000, // Connection timeout
     query: { role: user.role, liveBusId: bus._id },
   });
-  //  refreshRequest if bus details is updated or driver and conductor they are not allowed to provide locatioin got it
 
   socket.on("connect", () => {
     console.log("✅ Connected to server");

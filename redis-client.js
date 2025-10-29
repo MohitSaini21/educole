@@ -9,7 +9,7 @@ export const subClient = client.duplicate();
 
 // Event listeners for main client
 client.on("connect", () => {
-  console.log("✅ Connected to Redis");
+  // console.log("✅ Connected to Redis");
 });
 
 client.on("error", (err) => {
@@ -17,7 +17,7 @@ client.on("error", (err) => {
 });
 
 // Connect to Redis and optionally flush all data on startup
-export const startRedisClient = async () => {
+const startRedisClient = async () => {
   try {
     // Connect all clients
     await Promise.all([
@@ -25,13 +25,6 @@ export const startRedisClient = async () => {
       pubClient.connect(),
       subClient.connect(),
     ]);
-
-    // if (process.env.NODE_ENV === "development") {
-    //   await client.flushAll();
-    //   console.log("✅ Redis flushed (development only)");
-    // }
-
-    console.log("✅ Redis clients connected successfully");
   } catch (err) {
     console.error("❌ Error during Redis initialization:", err);
   }
@@ -51,6 +44,8 @@ process.on("SIGINT", async () => {
     process.exit(1);
   }
 });
+
+await startRedisClient();
 
 // Export the main client for other app modules
 export default client;

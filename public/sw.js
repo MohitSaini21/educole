@@ -44,15 +44,15 @@ const messaging = firebase.messaging();
 const CACHE_NAME = "v1.4";
 
 const ASSETS_TO_CACHE = [
-  "/offline.html",
+  "localhost:80/offline.html",
 
   // Images
-  "/assets/images/busStuff/double-decker-bus.png",
+  "localhost:80/assets/images/busStuff/double-decker-bus.png",
 
-  "/tmuLogo.jpeg",
+  "localhost:80/tmuLogo.jpeg",
 
   // Other assets
-  "/assets/manifest.json",
+  "localhost:80/assets/manifest.json",
 ];
 
 // -------------------------------------------------------------

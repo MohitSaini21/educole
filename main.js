@@ -64,6 +64,9 @@ app.use(cookieParser());
 // Middleware and Settings
 // Set EJS as the view engine (Corrected 'view engine' typo)
 app.set("view engine", "ejs");
+// 👇 Trust Nginx (the proxy)
+// ✅ Safe proxy trust — only local (Nginx)
+app.set("trust proxy", "loopback");
 
 // Middlewares for Parsing and Static Files (Optional, Add if Needed)
 
@@ -180,7 +183,6 @@ io.use((socket, next) => {
 });
 
 io.on("connection", async (socket) => {
-  // if (!socket.adapter) return;
   // const isRealClient = socket.request.headers["user-agent"] !== undefined;
   // if (!isRealClient) return; // Ignore ghost connections from Redis
   const query = socket.handshake.query;
@@ -1249,10 +1251,8 @@ async function removeSocketFromRedis(distinctName, key, socket, label) {
   }
 }
 
-import { startRedisClient } from "./redis-client.js";
 const startServer = async () => {
   try {
-    console.log(`process pid  is ${process.pid}`);
     await ConnectDB("mongodb://localhost:27017/educoleDB");
     const existingAdministrator = await CORE.findOne({ role: "administrator" });
     if (!existingAdministrator) {
@@ -1265,35 +1265,19 @@ const startServer = async () => {
         isLogged: false,
         notificationToken: "",
       });
-      console.log("🧑‍💼 Admin user created in CORE collection.");
-    } else {
-      console.log("✅ Admin user already exists.");
     }
 
-    console.log("✅ MongoDB connected successfully.");
-    // Call startRedisClient function
-    await startRedisClient();
-
-    await setAllRouteStops();
-    console.log("✅ All routeStops loaded into memory.");
-
-    const timeInIST = moment().tz("Asia/Kolkata").format("YYYY-MM-DD HH:mm:ss");
-    console.log("🕐 Time in IST:", timeInIST);
-
-    server.listen(PORT, () => {
-      console.log(`🚀 Server is running and listening at port ${PORT}`);
+    server.listen(process.env.PORT, () => {
+      console.log(
+        `🚀 Server is running and listening at port ${process.env.PORT}  and here is the proccess Id ${process.pid}`
+      );
     });
   } catch (err) {
     console.error("❌ Failed to start server:", err);
   }
 };
 
-setTimeout(
-  () => {
-    startServer();
-  },
-  Math.random() * 1000 + 500
-);
+startServer();
 
 async function getAllBusObjectIds() {
   try {

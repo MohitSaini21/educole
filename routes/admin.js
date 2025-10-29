@@ -45,6 +45,9 @@ router.post("/api/save-fcm-token", async (req, res) => {
 
 // checked
 router.get("/", async (req, res) => {
+  console.log(
+    ` here is the process that process the http request got it ${process.pid}`
+  );
   try {
     const user = await CORE.findById(req.user.id);
 
