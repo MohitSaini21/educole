@@ -52,7 +52,8 @@ const ASSETS_TO_CACHE = [
   "/tmuLogo.jpeg",
 
   // Other assets
-  "/assets/manifest.json",
+  "/assets/amanifest.json",
+  "/assets/wmanifest.json",
 ];
 
 // -------------------------------------------------------------
