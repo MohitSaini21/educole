@@ -350,22 +350,26 @@ router.post(
       await conductor.save();
       await removeCache(conductor.conductorId);
 
-      const io = req.app.get("io");
-      const queryBusId = conductor.assignedBus;
+      // const io = req.app.get("io");
 
-      for (const [socketId, socket] of io.sockets.sockets) {
-        const query = socket.handshake?.query;
-        const connectedBusId = query?.liveBusId;
-        const role = query?.role;
+      // const busId = conductor.assignedBus;
+      // let socketId = await client.get(`busSocketsId:${busId}`);
+      // if (socketId) {
+      //   io.to(socketId).emit("refreshpage", busId);
+      // }
+      // for (const [socketId, socket] of io.sockets.sockets) {
+      //   const query = socket.handshake?.query;
+      //   const connectedBusId = query?.liveBusId;
+      //   const role = query?.role;
 
-        if (!connectedBusId || !role) {
-          continue;
-        }
+      //   if (!connectedBusId || !role) {
+      //     continue;
+      //   }
 
-        if (connectedBusId === String(queryBusId) && role === "conductor") {
-          socket.disconnect(true);
-        }
-      }
+      //   if (connectedBusId === String(queryBusId) && role === "conductor") {
+      //     socket.disconnect(true);
+      //   }
+      // }
       if (!conductor) {
         return res.status(404).json({ message: "Conductor not found" });
       }
@@ -407,6 +411,19 @@ router.post("/conductorRow/:id", async (req, res) => {
     ) {
       await removeCacheBus(oldConductor._id);
       updateData.isLogged = false; // Mark as not logged
+      const io = req.app.get("io");
+      const busId = oldConductor.assignedBus;
+
+      // ✅ Get the socket ID of that bus
+      const socketId = await client.get(`busSocketsId:${busId}`);
+      console.log("🎯 Socket ID from Redis:", socketId);
+
+      if (socketId) {
+        io.to(socketId).emit("refreshpage", busId);
+        console.log("🔁 Refreshpage event emitted to:", socketId);
+      } else {
+        console.log("⚠️ No active socket found for bus:", busId);
+      }
     }
     // Fetch conductor by ID and update
     const conductor = await Conductor.findByIdAndUpdate(id, updateData, {
@@ -414,22 +431,21 @@ router.post("/conductorRow/:id", async (req, res) => {
       runValidators: true, // Ensures validation rules are applied
     });
 
-    const io = req.app.get("io");
-    const queryBusId = conductor.assignedBus;
+    // const queryBusId = conductor.assignedBus;
 
-    for (const [socketId, socket] of io.sockets.sockets) {
-      const query = socket.handshake?.query;
-      const connectedBusId = query?.liveBusId;
-      const role = query?.role;
+    // for (const [socketId, socket] of io.sockets.sockets) {
+    //   const query = socket.handshake?.query;
+    //   const connectedBusId = query?.liveBusId;
+    //   const role = query?.role;
 
-      if (!connectedBusId || !role) {
-        continue;
-      }
+    //   if (!connectedBusId || !role) {
+    //     continue;
+    //   }
 
-      if (connectedBusId === String(queryBusId) && role === "conductor") {
-        socket.disconnect(true);
-      }
-    }
+    //   if (connectedBusId === String(queryBusId) && role === "conductor") {
+    //     socket.disconnect(true);
+    //   }
+    // }
     if (!conductor) {
       return res.status(404).json({ message: "Conductor not found" });
     }
@@ -528,22 +544,22 @@ router.post(
       await conductor.save();
       await removeCache(conductor.driverId);
 
-      const io = req.app.get("io");
-      const queryBusId = conductor.assignedBus;
+      // const io = req.app.get("io");
+      // const queryBusId = conductor.assignedBus;
 
-      for (const [socketId, socket] of io.sockets.sockets) {
-        const query = socket.handshake?.query;
-        const connectedBusId = query?.liveBusId;
-        const role = query?.role;
+      // for (const [socketId, socket] of io.sockets.sockets) {
+      //   const query = socket.handshake?.query;
+      //   const connectedBusId = query?.liveBusId;
+      //   const role = query?.role;
 
-        if (!connectedBusId || !role) {
-          continue;
-        }
+      //   if (!connectedBusId || !role) {
+      //     continue;
+      //   }
 
-        if (connectedBusId === String(queryBusId) && role === "driver") {
-          socket.disconnect(true);
-        }
-      }
+      //   if (connectedBusId === String(queryBusId) && role === "driver") {
+      //     socket.disconnect(true);
+      //   }
+      // }
 
       console.log("File uploaded:", req.file);
 
@@ -583,6 +599,19 @@ router.post("/driverRow/:id", async (req, res) => {
     if (updateData.driverId && updateData.driverId !== oldConductor.driverId) {
       await removeCacheBus(oldConductor._id);
       updateData.isLogged = false; // Mark as not logged
+      const io = req.app.get("io");
+      const busId = oldConductor.assignedBus;
+
+      // ✅ Get the socket ID of that bus
+      const socketId = await client.get(`busSocketsId:${busId}`);
+      console.log("🎯 Socket ID from Redis:", socketId);
+
+      if (socketId) {
+        io.to(socketId).emit("refreshpage", busId);
+        console.log("🔁 Refreshpage event emitted to:", socketId);
+      } else {
+        console.log("⚠️ No active socket found for bus:", busId);
+      }
     }
 
     // Update driver
@@ -596,22 +625,22 @@ router.post("/driverRow/:id", async (req, res) => {
       return res.status(404).json({ message: "Driver not found" });
     }
 
-    const io = req.app.get("io");
-    const queryBusId = driver.assignedBus;
+    // const io = req.app.get("io");
+    // const queryBusId = driver.assignedBus;
 
-    for (const [socketId, socket] of io.sockets.sockets) {
-      const query = socket.handshake?.query;
-      const connectedBusId = query?.liveBusId;
-      const role = query?.role;
+    // for (const [socketId, socket] of io.sockets.sockets) {
+    //   const query = socket.handshake?.query;
+    //   const connectedBusId = query?.liveBusId;
+    //   const role = query?.role;
 
-      if (!connectedBusId || !role) {
-        continue;
-      }
+    //   if (!connectedBusId || !role) {
+    //     continue;
+    //   }
 
-      if (connectedBusId === String(queryBusId) && role === "driver") {
-        socket.disconnect(true);
-      }
-    }
+    //   if (connectedBusId === String(queryBusId) && role === "driver") {
+    //     socket.disconnect(true);
+    //   }
+    // }
 
     // Redirect after disconnect
     return res.redirect(
@@ -627,22 +656,26 @@ router.post("/driverRow/:id", async (req, res) => {
 
 // let's write down fucntion to disconnect it from server when it is updated
 
-function disConnect(req, busId) {
+async function disConnect(req, busId) {
   // ✅ Disconnect relevant sockets
   const io = req.app.get("io");
 
-  for (const [socketId, socket] of io.sockets.sockets) {
-    const queryBusId = socket.handshake.query?.liveBusId;
-
-    if (queryBusId && queryBusId === busId.toString()) {
-      // socket.disconnect(true);
-      // console.log(
-      //   `🔌 Disconnected socket ${socketId} for busId: ${queryBusId}`
-      // );
-
-      io.to(socket.id).emit("refreshRequest", queryBusId);
-    }
+  let socketId = await client.get(`busSocketsId:${busId}`);
+  if (socketId) {
+    io.to(socketId).emit("refreshpage", busId);
   }
+  // for (const [socketId, socket] of io.sockets.sockets) {
+  //   const queryBusId = socket.handshake.query?.liveBusId;
+
+  //   if (queryBusId && queryBusId === busId.toString()) {
+  //     // socket.disconnect(true);
+  //     // console.log(
+  //     //   `🔌 Disconnected socket ${socketId} for busId: ${queryBusId}`
+  //     // );
+
+  //     io.to(socket.id).emit("refreshRequest", queryBusId);
+  //   }
+  // }
 }
 
 router.get("/busEntire/:id", async (req, res) => {
@@ -1388,15 +1421,15 @@ router.post("/deleteAdmin", async (req, res) => {
     }
 
     // Disconnect socket if connected
-    const io = req.app.get("io");
-    const deletedAdminIdStr = String(deletedAdmin._id);
+    // const io = req.app.get("io");
+    // const deletedAdminIdStr = String(deletedAdmin._id);
 
-    io.sockets.sockets.forEach((socket, socketId) => {
-      const connectedAdminId = socket.handshake?.query?.adminId;
-      if (connectedAdminId === deletedAdminIdStr) {
-        socket.disconnect(true);
-      }
-    });
+    // io.sockets.sockets.forEach((socket, socketId) => {
+    //   const connectedAdminId = socket.handshake?.query?.adminId;
+    //   if (connectedAdminId === deletedAdminIdStr) {
+    //     socket.disconnect(true);
+    //   }
+    // });
 
     return res
       .status(200)

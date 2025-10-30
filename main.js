@@ -70,9 +70,9 @@ app.set("trust proxy", "loopback");
 
 // Middlewares for Parsing and Static Files (Optional, Add if Needed)
 
-app.get("/", checkAuthHome, (req, res) => {
-  res.sendFile(__dirname + "/public/index.html");
-});
+// app.get("/", checkAuthHome, (req, res) => {
+//   res.sendFile(__dirname + "/public/index.html");
+// });
 app.use(express.json()); // Parse JSON requests
 app.use(express.urlencoded({ extended: true })); // Parse URL-encoded requests
 app.use(express.static("public")); // Serve static files from the "public" directory
@@ -249,6 +249,7 @@ io.on("connection", async (socket) => {
 
     let exists = await client.sIsMember("liveBuses", busId);
     if (exists) {
+      socket.emit("disconnectReason", "duplicate_connection");
       console.log(
         "Let All possible process drop bus socket connection firt got it ."
       );

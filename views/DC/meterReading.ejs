@@ -42,145 +42,127 @@
 
         <%- include('./partials/nav.ejs') %>
         <!-- partial -->
-        <div class="main-panel">
-            <div class="content-wrapper">
-                <h5>Bus Number : <%=bus.busNumber  %> (<%=bus.route  %>)</h5>
-                <br>
+<div class="main-panel">
+  <div class="content-wrapper">
+    <div class="mb-4 text-center">
+      <h4 class="fw-bold">बस संख्या: <%= bus.busNumber %> (<%= bus.route %>)</h4>
+    </div>
 
-                <% if (isMorning) { %> 
-                    <!-- अगर अभी सुबह है -->
-            
-                    <% if ( activity && activity.morningSnap && activity.morningSnap.reading && activity.morningSnap.image) { %>
-                        <p>शाम की रीडिंग अपलोड करने में बचा समय:
-                            <%= remainingTime.hours %> घंटे
-                            <%= remainingTime.minutes %> मिनट
-                            <%= remainingTime.seconds %> सेकंड
-                        </p>
-                    <% } else { %>
-                        <!-- सुबह की रीडिंग नहीं है, इसलिए फॉर्म दिखाओ -->
-            
-                        <div class="row justify-content-center mb-4">
-                            <!-- छवि प्रीव्यू एरिया -->
-                            <div class="col-md-6 text-center grid-margin stretch-card">
-                                <img id="preview"
-                                     src=""
-                                     alt="यहाँ मीटर की छवि दिखाई देगी"
-                                     style="
-                                        margin-top: 10px;
-                                        width: 100%;
-                                        max-width: 600px;
-                                        height: 220px;
-                                        object-fit: cover;
-                                        border: 1px solid #ccc;
-                                        border-radius: 6px;
-                                        display: none;
-                                     " />
-                            </div>
-                        </div>
-            
-                        <div class="row justify-content-center">
-                            <!-- फॉर्म कार्ड -->
-                            <div class="col-md-6 grid-margin stretch-card">
-                                <div class="card">
-                                    <div class="card-body">
-                                        <h4 class="card-title">सुबह की रीडिंग (<%=bus.busNumber  %>)</h4>
-                                        <p class="card-description"> कृपया नीचे दी गई जानकारी भरें </p>
-            
-                                        <form id="meterForm" class="forms-sample" enctype="multipart/form-data">
-                                            <div class="form-group row">
-                                                <label for="meterPhoto" class="col-sm-3 col-form-label">मीटर की फोटो</label>
-                                                <div class="col-sm-9">
-                                                    <input type="file" accept="image/*" class="form-control" id="meterPhoto" name="meterPhoto" required />
-                                                </div>
-                                            </div>
-            
-                                            <div class="form-group row">
-                                                <label for="odometer" class="col-sm-3 col-form-label">ओडोमीटर रीडिंग</label>
-                                                <div class="col-sm-9">
-                                                    <input type="number" class="form-control" id="odometer" name="odometer" placeholder="यहाँ रीडिंग दर्ज करें" required />
-                                                </div>
-                                            </div>
-            
-                                            <div class="text-center mt-4">
-                                                <button type="submit" class="btn btn-primary mr-2">सबमिट करें</button>
-                                                <button type="reset" class="btn btn-dark">रद्द करें</button>
-                                            </div>
-                                        </form>
-            
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    <% } %>
-            
-                <% } else { %>
-                    <!-- अगर अभी शाम है -->
-            
-                    <% if (activity && activity.eveningSnap && activity.eveningSnap.reading && activity.eveningSnap.image) { %>
-          <p>आपने आज शाम की रीडिंग पहले ही भेज दी है। अब कल के लिए तैयार रहें।</p>
-                    <% } else { %>
-                        <!-- शाम की रीडिंग नहीं है, इसलिए फॉर्म दिखाओ -->
-            
-                        <div class="row justify-content-center mb-4">
-                            <!-- छवि प्रीव्यू एरिया -->
-                            <div class="col-md-6 text-center grid-margin stretch-card">
-                                <img id="preview"
-                                     src=""
-                                     alt="यहाँ मीटर की छवि दिखाई देगी"
-                                     style="
-                                        margin-top: 10px;
-                                        width: 100%;
-                                        max-width: 600px;
-                                        height: 220px;
-                                        object-fit: cover;
-                                        border: 1px solid #ccc;
-                                        border-radius: 6px;
-                                        display: none;
-                                     " />
-                            </div>
-                        </div>
-            
-                        <div class="row justify-content-center">
-                            <!-- फॉर्म कार्ड -->
-                            <div class="col-md-6 grid-margin stretch-card">
-                                <div class="card">
-                                    <div class="card-body">
-                                        <h4 class="card-title">शाम की रीडिंग (<%=bus.busNumber%>)</h4>
-                                        <p class="card-description"> कृपया नीचे दी गई जानकारी भरें </p>
-            
-                                        <form id="meterForm" class="forms-sample" enctype="multipart/form-data">
-                                            <div class="form-group row">
-                                                <label for="meterPhoto" class="col-sm-3 col-form-label">मीटर की फोटो</label>
-                                                <div class="col-sm-9">
-                                                    <input type="file" accept="image/*" class="form-control" id="meterPhoto" name="meterPhoto" required />
-                                                </div>
-                                            </div>
-            
-                                            <div class="form-group row">
-                                                <label for="odometer" class="col-sm-3 col-form-label">ओडोमीटर रीडिंग</label>
-                                                <div class="col-sm-9">
-                                                    <input type="number" class="form-control" id="odometer" name="odometer" placeholder="यहाँ रीडिंग दर्ज करें" required />
-                                                </div>
-                                            </div>
-            
-                                            <div class="text-center mt-4">
-                                                <button type="submit" class="btn btn-primary mr-2">सबमिट करें</button>
-                                                <button type="reset" class="btn btn-dark">रद्द करें</button>
-                                            </div>
-                                        </form>
-            
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    <% } %>
-                <% } %>
+    <% if (isMorning) { %>
+      <% if (activity && activity.morningSnap && activity.morningSnap.reading && activity.morningSnap.image) { %>
+        <div class="alert alert-success text-center shadow-sm rounded">
+          <strong>⏰ शाम की रीडिंग अपलोड करने में बचा समय:</strong><br>
+          <%= remainingTime.hours %> घंटे
+          <%= remainingTime.minutes %> मिनट
+          <%= remainingTime.seconds %> सेकंड
+        </div>
+      <% } else { %>
+        <div class="text-center mb-4">
+          <h5 class="fw-semibold text-primary">सुबह की रीडिंग सबमिट करें</h5>
+          <p class="text-muted">कृपया नीचे दी गई जानकारी ध्यानपूर्वक भरें</p>
+        </div>
 
-                <%- include('./partials/footer.ejs') %>
+        <div class="row justify-content-center mb-3">
+          <div class="col-md-6 text-center grid-margin stretch-card">
+            <img id="preview"
+                 src=""
+                 alt="यहाँ मीटर की छवि दिखाई देगी"
+                 class="border rounded shadow-sm"
+                 style="width: 100%; max-width: 600px; height: 220px; object-fit: cover; display: none;" />
+          </div>
+        </div>
+
+        <div class="row justify-content-center">
+          <div class="col-md-6 grid-margin stretch-card">
+            <div class="card shadow-sm border-0">
+              <div class="card-body">
+            
+                <hr>
+                <form id="meterForm" class="forms-sample" enctype="multipart/form-data">
+                  <div class="form-group row mb-3">
+                    <label for="meterPhoto" class="col-sm-4 col-form-label">मीटर की फोटो</label>
+                    <div class="col-sm-8">
+                      <input type="file" accept="image/*" class="form-control" id="meterPhoto" name="meterPhoto" required />
+                    </div>
+                  </div>
+
+                  <div class="form-group row mb-3">
+                    <label for="odometer" class="col-sm-4 col-form-label">ओडोमीटर रीडिंग</label>
+                    <div class="col-sm-8">
+                      <input type="number" class="form-control" id="odometer" name="odometer" placeholder="यहाँ रीडिंग दर्ज करें" required />
+                    </div>
+                  </div>
+
+                  <div class="text-center mt-4">
+                    <button type="submit" class="btn btn-primary me-2 px-4">सबमिट करें</button>
+                    <button type="reset" class="btn btn-outline-secondary px-4">रद्द करें</button>
+                  </div>
+                </form>
+              </div>
             </div>
-            
-        <!-- main-panel ends -->
-      </div>
+          </div>
+        </div>
+      <% } %>
+
+    <% } else { %>
+      <% if (activity && activity.eveningSnap && activity.eveningSnap.reading && activity.eveningSnap.image) { %>
+        <div class="alert alert-info text-center shadow-sm rounded">
+          <strong>आपने आज शाम की रीडिंग पहले ही भेज दी है।</strong><br>
+          कृपया कल की रीडिंग के लिए तैयार रहें।
+        </div>
+      <% } else { %>
+        <div class="text-center mb-4">
+          <h5 class="fw-semibold text-primary">शाम की रीडिंग सबमिट करें</h5>
+          <p class="text-muted">कृपया नीचे दी गई जानकारी भरें</p>
+        </div>
+
+        <div class="row justify-content-center mb-3">
+          <div class="col-md-6 text-center grid-margin stretch-card">
+            <img id="preview"
+                 src=""
+                 alt="यहाँ मीटर की छवि दिखाई देगी"
+                 class="border rounded shadow-sm"
+                 style="width: 100%; max-width: 600px; height: 220px; object-fit: cover; display: none;" />
+          </div>
+        </div>
+
+        <div class="row justify-content-center">
+          <div class="col-md-6 grid-margin stretch-card">
+            <div class="card shadow-sm border-0">
+              <div class="card-body">
+         
+                <hr>
+                <form id="meterForm" class="forms-sample" enctype="multipart/form-data">
+                  <div class="form-group row mb-3">
+                    <label for="meterPhoto" class="col-sm-4 col-form-label">मीटर की फोटो</label>
+                    <div class="col-sm-8">
+                      <input type="file" accept="image/*" class="form-control" id="meterPhoto" name="meterPhoto" required />
+                    </div>
+                  </div>
+
+                  <div class="form-group row mb-3">
+                    <label for="odometer" class="col-sm-4 col-form-label">ओडोमीटर रीडिंग</label>
+                    <div class="col-sm-8">
+                      <input type="number" class="form-control" id="odometer" name="odometer" placeholder="यहाँ रीडिंग दर्ज करें" required />
+                    </div>
+                  </div>
+
+                  <div class="text-center mt-4">
+                    <button type="submit" class="btn btn-primary me-2 px-4">सबमिट करें</button>
+                    <button type="reset" class="btn btn-outline-secondary px-4">रद्द करें</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+      <% } %>
+    <% } %>
+
+    <%- include('./partials/footer.ejs') %>
+  </div>
+</div>
+
       <!-- page-body-wrapper ends -->
     </div>
     <!-- container-scroller -->

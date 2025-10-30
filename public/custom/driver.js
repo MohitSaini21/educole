@@ -221,9 +221,12 @@ function buildConnection() {
     query: { role: user.role, liveBusId: bus._id },
   });
 
+  socket.on("refreshpage", (busId) => {
+    window.location.reload();
+  });
   socket.on("connect", () => {
     console.log("✅ Connected to server");
-    // reset reconnect state
+
     isReconnecting = false;
     reconnectAttempt = 0;
     if (reconnectTimer) {
@@ -292,9 +295,10 @@ function buildConnection() {
     }
 
     // Optional: Reset the manual flag
+    if (!manuallyRejected) {
+      scheduleReconnect();
+    }
     window._wasManuallyRejected = false;
-
-    scheduleReconnect();
   });
 
   // socket.on("initiateWebCam", async (data) => {
@@ -356,6 +360,7 @@ function buildConnection() {
 }
 let baseDelay = 5000; // 5 sec
 function scheduleReconnect() {
+  console.log("scheduleReconect is being called .......................");
   if (isReconnecting) return; // already reconnecting
 
   reconnectAttempt++;

@@ -84,7 +84,7 @@
               <div class="col-12 grid-margin stretch-card" id="searchBus">
                 <div class="card">
                   <div class="card-body">
-                    <h4 class="card-title text-center">
+                    <h4 class="card-title">
                       🚌 Historical Records for Bus Number <%= bus.busNumber %>
                     </h4>
 
@@ -116,15 +116,21 @@
                   </p>
 
                   <p>Covered Distance: <%= busLog.distanceCovered %> Km</p>
-                  <p>Driven By:</p>
-                  <ul>
-                    <% if (busLog.whoDrived && busLog.whoDrived.length > 0) { %>
-                    <% busLog.whoDrived.forEach(function(driverId) { %>
-                    <li>Operator Id: <%= driverId %></li>
-                    <% }); %> <% } else { %>
-                    <li>No drivers found.</li>
-                    <% } %>
-                  </ul>
+            <p><strong>Driven By:</strong></p>
+<ul>
+  <% if (busLog.whoDrived && busLog.whoDrived.length > 0) { %>
+    <li>
+      [
+      <% busLog.whoDrived.forEach(function(driverId, index) { %>
+        <%= driverId %><%= index < busLog.whoDrived.length - 1 ? ', ' : '' %>
+      <% }); %>
+      ]
+    </li>
+  <% } else { %>
+    <li>No drivers found.</li>
+  <% } %>
+</ul>
+
                 </h6>
 
                 <!-- Tabs Navigation -->

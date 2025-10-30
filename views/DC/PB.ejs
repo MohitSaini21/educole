@@ -168,7 +168,7 @@
       <div class="card-body text-center">
         <h4 class="card-title mb-3">📈 ओडोमीटर अपडेट <%=bus.busNumber  %></h4>
         <form id="odometerForm" class="d-flex justify-content-center flex-wrap gap-3" style="max-width: 400px; margin: auto;">
-          <input type="number" class="form-control form-control-lg" name="odometerReading" id="odometerReading" value="<%= bus.distanceTravelled %>" placeholder="🔢 उदाहरण: 128560" required>
+          <input type="number" class="form-control form-control-lg" name="odometerReading" id="odometerReading" value="<%= bus.distanceTravelled %>" placeholder="🔢 उदाहरण: 128560"  step="any" required>
           <br><br>
           <br>
           <button type="submit" class="btn btn-outline-success btn-lg fw-bold">🔄 अपडेट करें</button>

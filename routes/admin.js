@@ -3,6 +3,7 @@ import CORE from "../model/admin.js";
 import Bus from "../model/bus.js";
 import moment from "moment-timezone";
 import Complaint from "../model/complain.js";
+import client from "../redis-client.js";
 import mongoose from "mongoose";
 
 import fs from "fs";
@@ -161,14 +162,20 @@ router.post("/changeStatus", async (req, res) => {
       const liveBusIds = affectedBuses.map((bus) => bus._id.toString()); // Ensure string
 
       // Step 2: Loop through all connected sockets
-      for (const [socketId, socket] of io.sockets.sockets) {
-        const queryBusId = socket.handshake.query?.liveBusId;
-
-        if (queryBusId && liveBusIds.includes(queryBusId)) {
-          socket.disconnect(true);
-          console.log(`🔌 Disconnected socket for busId: ${queryBusId}`);
+      liveBusIds.forEach(async (busId) => {
+        let socketId = await client.get(`busSocketsId:${busId.toString()}`);
+        if (socketId) {
+          io.to(socketId).emit("refreshpage", busId);
         }
-      }
+      });
+      // for (const [socketId, socket] of io.sockets.sockets) {
+      //   const queryBusId = socket.handshake.query?.liveBusId;
+
+      //   if (queryBusId && liveBusIds.includes(queryBusId)) {
+      //     socket.disconnect(true);
+      //     console.log(`🔌 Disconnected socket for busId: ${queryBusId}`);
+      //   }
+      // }
     }
 
     res.json({ success: true });

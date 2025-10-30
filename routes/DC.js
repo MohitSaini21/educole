@@ -241,18 +241,16 @@ router.post(
   }
 );
 
-function redirectIfBusAlreadyLive(req, res, busId) {
-  const io = req.app.get("io");
+async function redirectIfBusAlreadyLive(req, res, busId) {
+  try {
+    const io = req.app.get("io");
 
-  for (const [, socket] of io.sockets.sockets) {
-    const queryBusId = socket.handshake.query?.liveBusId;
-
-    if (queryBusId && queryBusId === busId.toString()) {
-      res.redirect("/DC/PB"); // index page
-      return true; // stop further route execution
-    }
+    let exists = await client.sIsMember("liveBuses", busId);
+    if (exists) return true;
+    else return false;
+  } catch (error) {
+    console.log(error.message);
   }
-  return false; // no live socket for this bus
 }
 
 //  let's make the flexible route for the drivers and conductors to go live .
@@ -611,6 +609,7 @@ router.post(
       await bus.save();
 
       // 3. सफलता का संदेश
+      await client.del(`cachedBus:${bus._id}`);
       return res.status(200).json({
         message: "✅ ओडोमीटर रीडिंग सफलतापूर्वक अपडेट कर दी गई है। धन्यवाद!",
         updatedReading: bus.distanceTravelled,
@@ -651,7 +650,9 @@ router.get(
     }
 
     // 🔍 check for active socket before rendering
-    if (redirectIfBusAlreadyLive(req, res, bus._id)) return;
+    if (await redirectIfBusAlreadyLive(req, res, bus._id.toString())) {
+      return res.redirect("/DC/PB");
+    }
 
     bus.routeStops = bus.routeStops.sort(
       (a, b) => parseInt(a.stopOrder) - parseInt(b.stopOrder)
@@ -889,12 +890,19 @@ router.post(
       }
 
       // इमेज का सिर्फ रिलेटिव पाथ स्टोर करो
+      // इमेज का सिर्फ रिलेटिव पाथ स्टोर करो
       const imagePath = file.path.split("public")[1];
-
+      let submittedWho;
+      if (req.worker.role == "conductor") {
+        submittedWho = req.worker.conductorId;
+      } else {
+        submittedWho = req.worker.driverId;
+      }
       if (isMorning) {
         activity.morningSnap = {
           image: imagePath,
-          submittedWho: req.worker.id,
+
+          submittedWho,
           reading: Number(odometer),
 
           takenAt: moment().tz("Asia/Kolkata").format("hh:mm A"),
@@ -902,7 +910,8 @@ router.post(
       } else {
         activity.eveningSnap = {
           image: imagePath,
-          submittedWho: req.worker.id,
+
+          submittedWho,
           reading: Number(odometer),
 
           takenAt: moment().tz("Asia/Kolkata").format("hh:mm A"),
