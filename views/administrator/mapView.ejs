@@ -301,28 +301,28 @@ const user= <%- JSON.stringify(user) %>;
 
 
 
-  socket.on("newStream",(busid)=>{
-    console.log("newConection")
+  // socket.on("newStream",(busid)=>{
+  //   console.log("newConection")
 
-    append(busid)
-  })
+  //   append(busid)
+  // })
  
 
 
-  setTimeout(() => {
-      socket.emit("allStream",(response)=>{
+  // setTimeout(() => {
+  //     socket.emit("allStream",(response)=>{
 
-        console.log(response)
+  //       console.log(response)
 
         
 
-        response.forEach(element => {
-          append(element)
-        });
+  //       response.forEach(element => {
+  //         append(element)
+  //       });
         
 
-  })
-  }, 5000);
+  // })
+  // }, 5000);
 
 
 

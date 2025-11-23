@@ -1,7 +1,13 @@
 import { createClient } from "redis";
 
 // Create the main Redis client
-const client = createClient();
+const client = createClient({
+  password: "AMX6cfNMcFR4mLtHQjVd6Og0zwnbepKQ",
+  socket: {
+    host: "redis-18009.c273.us-east-1-2.ec2.cloud.redislabs.com",
+    port: 18009,
+  },
+});
 
 // Adapter clients for Socket.IO Redis adapter
 export const pubClient = client.duplicate();

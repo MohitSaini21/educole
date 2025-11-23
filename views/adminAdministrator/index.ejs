@@ -420,7 +420,8 @@
                         let offline = totalCount;
 
                         // 🔌 Request live buses from server
-                        socket.emit("liveBuses", function (response) {
+                      setTimeout(() => {
+                          socket.emit("liveBuses", function (response) {
                           if (response.success) {
                             const liveBusIds = response.data || [];
 
@@ -450,6 +451,7 @@
                           }
                         });
 
+                      }, 2000);
                         // 📈 When a bus comes online
                         socket.on("add", (busId) => {
                           if (live < totalCount) {

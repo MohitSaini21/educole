@@ -216,7 +216,7 @@ router.get("/mapView", async (req, res) => {
   const user = await CORE.findById(req.user.id);
 
   if (user) {
-    return res.render("adminAdministrator/mapView.ejs", { user });
+    // return res.render("adminAdministrator/mapView.ejs", { user });
 
     if (user.role == "administrator") {
       return res.render("administrator/mapView.ejs", { user });

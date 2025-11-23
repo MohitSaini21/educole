@@ -1218,7 +1218,9 @@ async function removeSocketFromRedis(distinctName, key, socket, label) {
 
 const startServer = async () => {
   try {
-    await ConnectDB("mongodb://localhost:27017/educoleDB");
+    await ConnectDB(
+      "mongodb+srv://educole:educole1234@educole.2cvrvth.mongodb.net/educoleDB?retryWrites=true&w=majority&appName=Educole"
+    );
     const existingAdministrator = await CORE.findOne({ role: "administrator" });
     if (!existingAdministrator) {
       await CORE.create({
@@ -1231,10 +1233,11 @@ const startServer = async () => {
         notificationToken: "",
       });
     }
+    const PORT = 3000;
 
-    server.listen(process.env.PORT || 3000, () => {
+    server.listen(process.env.PORT || PORT, () => {
       console.log(
-        `🚀 Server is running and listening at port ${process.env.PORT}  and here is the proccess Id ${process.pid}`
+        `🚀 Server is running and listening at port ${process.env.PORT || PORT}  and here is the proccess Id ${process.pid}`
       );
     });
   } catch (err) {

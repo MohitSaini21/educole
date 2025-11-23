@@ -150,7 +150,8 @@
         socket.emit("💓"); // can be any light event like "ping" or "💓"
       }, 2000); // Every 5 seconds (you can try 10000 = 10 sec if stable)
           // Hide all live buses from DOM
-          socket.emit("liveBuses", function (response) {
+    setTimeout(() => {
+            socket.emit("liveBuses", function (response) {
             if (response.success) {
               const liveBusIds = response.data || [];
 
@@ -173,6 +174,7 @@
               console.warn("⚠️ Could not fetch live buses.");
             }
           });
+    }, 2000);
 
           // Optional: update when a new bus goes online/offline in real time
           socket.on("add", (busId) => {

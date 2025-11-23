@@ -8,7 +8,13 @@ const BASE_PORT = 3000; // starting port (3000, 3001, 3002, ...)
 
 if (cluster.isPrimary) {
   console.log(`👑 Primary process ${process.pid} is running`);
-  const masterClient = createClient();
+  const masterClient = createClient({
+    password: "AMX6cfNMcFR4mLtHQjVd6Og0zwnbepKQ",
+    socket: {
+      host: "redis-18009.c273.us-east-1-2.ec2.cloud.redislabs.com",
+      port: 18009,
+    },
+  });
   masterClient.on("error", (err) => {
     console.error("❌ Redis Master Error:", err);
   });
@@ -23,7 +29,7 @@ if (cluster.isPrimary) {
   await new Promise((res) => setTimeout(res, 300));
 
   // Fork workers and assign different ports
-  for (let i = 0; i < totalCPUs; i++) {
+  for (let i = 0; i < 1; i++) {
     const worker = cluster.fork({ PORT: BASE_PORT + i });
     console.log(
       `🚀 Forked worker ${worker.process.pid} on port ${BASE_PORT + i}`
