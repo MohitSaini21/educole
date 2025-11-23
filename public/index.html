@@ -863,7 +863,7 @@
         input.value = ""; // ✅ Clear the input field
         document.getElementById("loader").style.display = "flex";
         try {
-          const res = await fetch("/", {
+          const res = await fetch("/searchBus", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",

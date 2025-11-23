@@ -25,6 +25,8 @@ const startRedisClient = async () => {
       pubClient.connect(),
       subClient.connect(),
     ]);
+
+    console.log(`All clients are ready for the process ${process.pid}`);
   } catch (err) {
     console.error("❌ Error during Redis initialization:", err);
   }

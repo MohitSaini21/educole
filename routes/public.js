@@ -64,7 +64,7 @@ const complaintLimiter = rateLimit({
   },
 });
 
-router.post("/", async (req, res) => {
+router.post("/searchBus", async (req, res) => {
   try {
     const busNumber = req.body.inputValue?.toLowerCase().trim();
 
@@ -276,10 +276,25 @@ router.post("/saveToken", async (req, res) => {
   }
 });
 
+function haversineDistance(lat1, lon1, lat2, lon2, unit = "km") {
+  const toRad = (angle) => (angle * Math.PI) / 180;
+
+  const R = unit === "km" ? 6371 : 3958.8; // Radius of Earth in km or miles
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+
+  const c = 2 * Math.asin(Math.sqrt(a));
+
+  return R * c;
+}
+
 router.get("/particularBus/:id", async (req, res) => {
   const { id } = req.params;
 
-  // Step 1: Check if it's a valid ObjectId
   if (!mongoose.Types.ObjectId.isValid(id)) {
     return res.status(400).send("Invalid Bus ID");
   }
@@ -293,8 +308,126 @@ router.get("/particularBus/:id", async (req, res) => {
     .populate("conductor", "name phone")
     .lean();
 
+  let circle = [
+    {
+      name: bus.routeStops[0].stopName,
+      morningTime: bus.routeStops[0].morningTime,
+      eveningTime: bus.routeStops[0].eveningTime,
+      x: 1.5,
+      y: 1,
+      distance: 0,
+    },
+  ];
+  let totalUnits = 0;
+
+  for (let i = 0; i < bus.routeStops.length - 1; i++) {
+    const lat1 = parseFloat(bus.routeStops[i].latitude);
+    const lon1 = parseFloat(bus.routeStops[i].longitude);
+    const lat2 = parseFloat(bus.routeStops[i + 1].latitude);
+    const lon2 = parseFloat(bus.routeStops[i + 1].longitude);
+
+    if ([lat1, lon1, lat2, lon2].some(isNaN)) continue;
+
+    const stopDistance = Math.round(haversineDistance(lat1, lon1, lat2, lon2));
+    totalUnits += stopDistance;
+
+    circle.push({
+      name: bus.routeStops[i + 1].stopName,
+      morningTime: bus.routeStops[i + 1].morningTime,
+      eveningTime: bus.routeStops[i + 1].eveningTime,
+      x: 1.5,
+      y: totalUnits + 1,
+      distance: stopDistance,
+    });
+  }
+
+  console.log(circle);
+  console.log("Total Distance:", totalUnits, "km");
+
+  // Temp
+
   if (bus) {
-    return res.render("public/particularBus.ejs", { bus });
+    return res.render("public/particularBus.ejs", {
+      bus,
+      height: (totalUnits + 2) * 20,
+      units: totalUnits,
+      circle,
+    });
+  } else {
+    return res.send("Bus not found");
+  }
+});
+router.get("/particularBusML/:id", async (req, res) => {
+  const { id } = req.params;
+
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return res.status(400).send("Invalid Bus ID");
+  }
+
+  // Step 2: Convert to ObjectId (optional, Mongoose does it internally if valid)
+  const objectId = new mongoose.Types.ObjectId(id);
+
+  const bus = await Bus.findById(id)
+    .select("busNumber routeStops iconPhoto route _id")
+    .populate("driver", "name phone")
+    .populate("conductor", "name phone")
+    .lean();
+
+  let circle = [
+    {
+      name: bus.routeStops[0].stopName,
+      morningTime: bus.routeStops[0].morningTime,
+      eveningTime: bus.routeStops[0].eveningTime,
+      x: 1.5,
+      y: 2,
+      distance: 0,
+      totalUnitsSoFar: 0,
+    },
+  ];
+  let totalUnits = 0;
+
+  for (let i = 0; i < bus.routeStops.length - 1; i++) {
+    const lat1 = parseFloat(bus.routeStops[i].latitude);
+    const lon1 = parseFloat(bus.routeStops[i].longitude);
+    const lat2 = parseFloat(bus.routeStops[i + 1].latitude);
+    const lon2 = parseFloat(bus.routeStops[i + 1].longitude);
+
+    if ([lat1, lon1, lat2, lon2].some(isNaN)) continue;
+
+    const stopDistance = Math.round(haversineDistance(lat1, lon1, lat2, lon2));
+    totalUnits += stopDistance;
+
+    circle.push({
+      name: bus.routeStops[i + 1].stopName,
+      morningTime: bus.routeStops[i + 1].morningTime,
+      eveningTime: bus.routeStops[i + 1].eveningTime,
+      x: 1.5,
+      y: totalUnits + 2,
+      distance: stopDistance,
+      totalUnitsSoFar: totalUnits,
+    });
+  }
+
+  console.log(circle);
+  console.log("Total Distance:", totalUnits, "km");
+
+  const totalKm = totalUnits;
+
+  const maxHeight = 1200;
+  const minHeight = 400;
+  const minPerUnit = 5;
+  const maxPerUnit = 40;
+
+  const normalized = Math.log10(totalKm + 1) / Math.log10(100 + 1);
+  const perUnitPix = maxPerUnit - (maxPerUnit - minPerUnit) * normalized;
+  if (bus) {
+    return res.render("public/mapLess.ejs", {
+      bus,
+      height: (totalUnits + 4) * perUnitPix,
+      units: totalUnits,
+      circle,
+      perUnitPix,
+    });
   } else {
     return res.send("Bus not found");
   }

@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Map Less</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous" />
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+  <style>
+    .stopsContainer {
+      position: relative;
+      /* allows absolute positioning of child elements */
+      height: 100%;
+      /* your given height */
+      width: 100%;
+      /* example width, adjust as needed */
+
+
+      padding: 0;
+
+
+      border: 1px solid #ccc;
+    }
+
+    .card {
+      position: absolute;
+      /* allows precise placement */
+      left: 50%;
+      /* start from center horizontally */
+      transform: translateX(-50%);
+      /* center it perfectly */
+
+
+      padding: 5px;
+      background: white;
+      border: 1px solid #333;
+      text-align: center;
+      border-radius: 5px;
+    }
+
+    .bus-line {
+      stroke-dasharray: 6 6;
+      animation: moveLine 2s linear infinite;
+    }
+
+    @keyframes moveLine {
+      to {
+        stroke-dashoffset: -12;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <div class="row">
+      <div class="col border">
+        <button type="button" class="btn">Back</button>
+      </div>
+      <div class="col border d-flex justify-content-end">
+        <!-- Driver and Conductor Information -->
+        <div>
+          <button class="btn" data-bs-toggle="modal" data-bs-target="#exampleModalToggle">
+            D/C
+          </button>
+
+          <!-- Modal 1 -->
+          <div class="modal fade" id="exampleModalToggle" aria-hidden="true" aria-labelledby="exampleModalToggleLabel" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h1 class="modal-title fs-5" id="exampleModalToggleLabel">
+                    Modal 1
+                  </h1>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                  Show a second modal and hide this one with the button below.
+                </div>
+                <div class="modal-footer">
+                  <button id="openModal2" class="btn btn-primary">
+                    Open second modal
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Modal 2 -->
+          <div class="modal fade" id="exampleModalToggle2" aria-hidden="true" aria-labelledby="exampleModalToggleLabel2" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h1 class="modal-title fs-5" id="exampleModalToggleLabel2">
+                    Modal 2
+                  </h1>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                  Hide this modal and show the first with the button below.
+                </div>
+                <div class="modal-footer">
+                  <button id="backToFirst" class="btn btn-primary">
+                    Back to first
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Button trigger modal -->
+        <button type="button" class="btn" data-bs-toggle="modal" data-bs-target="#staticBackdrop">
+          Bus Info
+        </button>
+
+        <!-- Modal -->
+        <div class="modal fade" id="staticBackdrop" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+          <div class="modal-dialog">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h1 class="modal-title fs-5" id="staticBackdropLabel">
+                  Modal title
+                </h1>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+              <div class="modal-body">...</div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Bus Info -->
+      </div>
+    </div>
+    <div class="row">
+      <div class="col border">
+        <p class="border">UP304 (tmu to dhampur (<%=units  %> km))</p>
+      </div>
+    </div>
+
+
+
+    <br>
+    <br>
+
+    <div class="row p-2 border position-relative">
+      <!-- <div class="col border border-primary p-0" style="padding: <%= perUnitPix %>px !important;"> -->
+      <div class="col border border-primary p-0">
+
+        <!-- <div class="col border border-primary p-0" style="padding: 20px !important;"> -->
+
+        <div class="stopsContainer">
+          <% for (let index = 0; index < circle.length; index++) { %>
+          <!-- Draw circle -->
+          <%  const stop = circle[index]; %>
+
+
+          <!-- Stop card -->
+          <div class="position-absolute text-center shadow-none" style="top:<%= circle[index].totalUnitsSoFar * perUnitPix + 1.5*perUnitPix%>px;
+         left:50%;
+         transform:translateX(-50%);
+         width: 80%;
+         background: transparent;
+         border: none;">
+
+            <!-- Clickable stop name -->
+            <div class="fw-semibold text-dark d-inline-flex align-items-baseline justify-content-center" style="font-size: clamp(0.8rem, 2.2vw, 1rem); cursor:pointer;" data-bs-toggle="modal" data-bs-target="#stopModal<%= index %>">
+              <span class="text-truncate"><%= circle[index].name %></span>
+              <span class="text-muted ms-1" style="font-size: 0.75em;">
+                (<%= circle[index].distance %> km)
+              </span>
+            </div>
+          </div>
+          <!-- Modal -->
+          <div class="modal fade" id="stopModal<%= index %>" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+              <div class="modal-content border-0 shadow-sm rounded-3" style="font-family: 'Inter', 'Segoe UI', Roboto, sans-serif;">
+
+                <!-- Header -->
+                <div class="modal-header border-0 pb-0">
+                  <h5 class="modal-title fw-semibold" style="font-size: 1.25rem; color: #222;">
+                    <%= circle[index].name %>
+                  </h5>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+
+                <!-- Body -->
+                <div class="modal-body small text-muted" style="font-size: 0.95rem; line-height: 1.6;">
+                  <p class="mb-2">
+                    <strong class="text-dark" style="font-weight: 600;">Distance:</strong>
+                    <span><%= circle[index].distance %> km</span>
+                  </p>
+                  <p class="mb-2">
+                    <strong class="text-dark" style="font-weight: 600;">Arrival:</strong>
+                    <span><%= circle[index].morningTime %></span>
+                  </p>
+                  <p class="mb-0">
+                    <strong class="text-dark" style="font-weight: 600;">Departure:</strong>
+                    <span><%= circle[index].eveningTime %></span>
+                  </p>
+                </div>
+
+                <!-- Footer (optional subtle touch) -->
+                <div class="modal-footer border-0 pt-0">
+                  <button type="button" class="btn btn-light btn-sm px-3" data-bs-dismiss="modal" style="font-size: 0.9rem;">
+                    Close
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+
+
+
+          <% } %>
+
+        </div>
+      </div>
+
+      <div class="col border border-danger p-0">
+        <svg id="svg" viewBox="0 0 3 <%=units + 4%>" height="<%=height %>px" preserveAspectRatio="none" width="100%" class="border">
+          <!-- vertical lines -->
+          <path stroke="black" stroke-width="2" vector-effect="non-scaling-stroke" d="M0 0 V100" />
+          <path stroke="#0a57c0" stroke-width="10" vector-effect="non-scaling-stroke" d="M1.5 1 L1.5 1 1.5 <%=units + 3%>" stroke-linecap="round" />
+          <path stroke="black" stroke-width="2" vector-effect="non-scaling-stroke" d="M3 0 V100" />
+
+          <!--  Horizontal lines -->
+
+          <% for (let index = 0; index <=units+4; index++) { %>
+          <path stroke="black" stroke-width="2" vector-effect="non-scaling-stroke" d="M0 <%= index %> H100" />
+          <% } %>
+
+
+          <% for (let index = 0; index < circle.length; index++) { %>
+          <!-- Draw circle -->
+          <circle r="0.2" cx="<%= circle[index].x %>" cy="<%= circle[index].y %>" fill="red" />
+
+
+          <image href="/busIcon.svg" x="1.25" y="1.5" width="0.5" height="1" id="bus" />
+
+
+          <% } %>
+
+
+
+
+
+        </svg>
+      </div>
+    </div>
+    <br>
+    <br>
+    <br>
+    <br>
+  </div>
+
+
+
+
+  <!-- <script>
+    const busIcon = document.getElementById("bus");
+    const units = <%- JSON.stringify(units) %>;
+
+    // Bus size (same as in SVG)
+    const width = 0.5;
+    const height = 1;
+
+    // Centering offsets
+    const offsetX = width / 2;
+    const offsetY = height / 2;
+
+    // Movement settings
+    const xCoord = 1.5; // fixed X coordinate
+    const minY = 2; // top position
+    const maxY = units + 1; // bottom position
+    let currentY = minY;
+    let direction = 0.09; // 1 = down, -1 = up
+
+    function moveBus() {
+      // update SVG position (centered)
+      busIcon.setAttribute("x", xCoord - offsetX);
+      busIcon.setAttribute("y", currentY - offsetY);
+
+      // move by 1 unit
+      currentY += direction;
+
+      // reverse direction at limits
+      if (currentY >= maxY || currentY <= minY) {
+        direction *= -1;
+      }
+    }
+
+    // run once at start
+    moveBus();
+
+    // update every second
+    setInterval(moveBus, 1000);
+  </script> -->
+
+  <script>
+    // Handle "Open second modal"
+    document
+      .getElementById("openModal2")
+      .addEventListener("click", function() {
+        const modal1 = bootstrap.Modal.getInstance(
+          document.getElementById("exampleModalToggle")
+        );
+        modal1.hide();
+
+        // Wait until modal 1 is completely hidden, then show modal 2
+        document.getElementById("exampleModalToggle").addEventListener(
+          "hidden.bs.modal",
+          () => {
+            const modal2 = new bootstrap.Modal(
+              document.getElementById("exampleModalToggle2")
+            );
+            modal2.show();
+          }, {
+            once: true
+          }
+        );
+      });
+
+    // Handle "Back to first"
+    document
+      .getElementById("backToFirst")
+      .addEventListener("click", function() {
+        const modal2 = bootstrap.Modal.getInstance(
+          document.getElementById("exampleModalToggle2")
+        );
+        modal2.hide();
+
+        // Wait until modal 2 is completely hidden, then show modal 1
+        document.getElementById("exampleModalToggle2").addEventListener(
+          "hidden.bs.modal",
+          () => {
+            const modal1 = new bootstrap.Modal(
+              document.getElementById("exampleModalToggle")
+            );
+            modal1.show();
+          }, {
+            once: true
+          }
+        );
+      });
+  </script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const bus = <%- JSON.stringify(bus) %>;
+
+    let stops=bus.routeStops;
+  
+
+    
+    
+
+
+
+    const socket = io({
+      query: {
+        busId: bus._id.toString()
+      },
+      transports: ["websocket"], // बहुत जरूरी — direct websocket connect
+      reconnection: true,
+      reconnectionAttempts: Infinity,
+      reconnectionDelay: 5000,
+      reconnectionDelayMax: 10000,
+      timeout: 20000,
+    });
+    socket.on("connect_error", (err) => {
+      console.error("❌ Socket connect error:", err.message);
+    });
+    setInterval(() => {
+      socket.emit("💓"); // can be any light event like "ping" or "💓"
+    }, 2000); // Every 5 seconds (you can try 10000 = 10 sec if stable)
+
+    function haversineDistance(lat1, lon1, lat2, lon2) {
+  const R = 6371; // Earth radius in km
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1 * Math.PI / 180) *
+    Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon / 2) ** 2;
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c; // Distance in km
+}
+
+function findBusPosition(stops, busLat, busLon) {
+    for (let i = 0; i < stops.length - 1; i++) {
+      const s1 = stops[i];
+      const s2 = stops[i + 1];
+
+      const d1 = haversineDistance(s1.latitude, s1.longitude, busLat, busLon);
+      const d2 = haversineDistance(s2.latitude, s2.longitude, busLat, busLon);
+      const dBetweenStops = haversineDistance(s1.latitude, s1.longitude, s2.latitude, s2.longitude);
+
+      // if the sum of d1 + d2 ≈ dBetweenStops
+      if (Math.abs((d1 + d2) - dBetweenStops) < 0.05) { // tolerance 50 meters
+        return {
+          between: [s1.stopName, s2.stopName],
+          stop1: s1,
+          stop2: s2,
+          progress: d1 / dBetweenStops, // optional (0 to 1)
+        };
+      }
+    }
+    return null;
+  }
+
+
+  function findBetweenStops(stops, busLat, busLon) {
+  // Step 1: find nearest stop
+  let nearestIndex = 0;
+  let minDist = Infinity;
+  stops.forEach((stop, i) => {
+    const d = haversine(busLat, busLon, stop.latitude, stop.longitude);
+    if (d < minDist) {
+      minDist = d;
+      nearestIndex = i;
+    }
+  });
+
+  // Step 2: determine direction
+  const nextStop = stops[nearestIndex + 1];
+  const prevStop = stops[nearestIndex - 1];
+  let between = null;
+
+  if (nextStop) {
+    const distToNext = haversine(busLat, busLon, nextStop.latitude, nextStop.longitude);
+    if (distToNext < minDist) between = [stops[nearestIndex].stopOrder, nextStop.stopOrder];
+  }
+  if (!between && prevStop) {
+    const distToPrev = haversine(busLat, busLon, prevStop.latitude, prevStop.longitude);
+    if (distToPrev < minDist) between = [prevStop.stopOrder, stops[nearestIndex].stopOrder];
+  }
+
+  return between
+    ? `Bus is between ${between[0]} and ${between[1]}`
+    : `Bus is near ${stops[nearestIndex].stopName}`;
+}
+
+    socket.emit("lastLocation", bus._id, (response) => {
+
+
+
+
+      if (response.data) {
+        const {
+          latitude,
+          longitude,
+          accuracy
+        } = response.data;
+        console.log("here is the last location")
+        console.log(latitude, longitude, accuracy)
+
+
+
+
+      } else {
+        console.log("Bus location is not available right now");
+      }
+    });
+  
+ stops.forEach(stop => {
+      const {latitude,longitude,stopOrder,stopName}=stop;
+      console.log(latitude,longitude,stopOrder,stopName)
+ })
+
+    socket.on("receivelocation", (data) => {
+      console.log("📡 Live update:", data);
+      const {
+        latitude,
+        longitude,
+        accuracy,
+        speed
+      } = data;
+
+
+      console.log(latitude, longitude, accuracy, speed)
+      if (!Number(accuracy) < 50) {
+        return
+
+      }
+    
+      stops.forEach(stop => {
+      const {latitude,longitude,stopOrder,stopName}=stop;
+    
+        
+      });
+
+
+
+
+
+
+    });
+  </script>
+</body>
+
+</html>

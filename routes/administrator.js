@@ -5,6 +5,7 @@ import Bus from "../model/bus.js";
 import Driver from "../model/driver.js";
 import Conductor from "../model/conductor.js";
 import multer from "multer";
+
 import fs from "fs";
 import QRCode from "qrcode";
 import path from "path";
@@ -196,7 +197,7 @@ router.post("/addBus", async (req, res) => {
         });
       }
     }
-    await setAllRouteStops();
+    await setAllRouteStops(client);
 
     // ✅ Final Response
     return res.status(201).json({
@@ -768,11 +769,12 @@ router.post("/busEntire/:id", async (req, res) => {
       bus.routeStops.push(...createStops);
     }
 
-    // 3. Save the updated bus document
+    // let's sort again accoring to the order got it.
+    bus.routeStops.sort((a, b) => Number(a.stopOrder) - Number(b.stopOrder));
     await bus.save();
 
     disConnect(req, bus._id);
-    await setAllRouteStops();
+    await setAllRouteStops(client);
 
     return res.json({ message: "Bus updated successfully", bus });
   } catch (error) {
@@ -821,7 +823,7 @@ router.delete("/deleteStop/:busId/:stopId", async (req, res) => {
     await FCM.deleteMany({ stopId });
 
     disConnect(req, bus._id);
-    await setAllRouteStops();
+    await setAllRouteStops(client);
 
     return res.status(200).json({
       message: "✅ Stop deleted successfully.",
@@ -1002,7 +1004,7 @@ router.post("/delete-bus", async (req, res) => {
     // 🚌 Delete bus
     await Bus.findByIdAndDelete(busId);
     console.log("🚌 Bus deleted from database.");
-    await setAllRouteStops();
+    await setAllRouteStops(client);
 
     return res.status(201).json({
       success: true,
@@ -1105,7 +1107,7 @@ router.post("/busIcon/:id", upload.single("iconPhoto"), async (req, res) => {
 
     console.log("File uploaded:", req.file);
     disConnect(req, bus._id);
-    await setAllRouteStops();
+    await setAllRouteStops(client);
 
     res.redirect(`/administrator/settings/busEntire/${bus._id}`);
   } catch (error) {

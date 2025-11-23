@@ -3,14 +3,18 @@ import client from "../redis-client.js";
 import { ConnectDB } from "../config/db.js";
 import mongoose from "mongoose";
 
-export async function setAllRouteStops(masterClient) {
+export async function setAllRouteStops(masterClient, isMain = false) {
   try {
-    await ConnectDB("mongodb://localhost:27017/educoleDB");
+    if (isMain) {
+      await ConnectDB("mongodb://localhost:27017/educoleDB");
+    }
     const buses = await Bus.find().select("_id routeStops iconPhoto busNumber");
 
     if (!buses.length) {
       console.log("⚠️ No buses found in DB, skipping cache setup.");
-      await mongoose.disconnect();
+      if (isMain) {
+        await mongoose.disconnect();
+      }
       return;
     }
 
@@ -36,8 +40,10 @@ export async function setAllRouteStops(masterClient) {
     const fields = await masterClient.hKeys("routeStopMap");
     console.log("Cached Bus IDs:", fields);
 
-    await mongoose.disconnect();
-    console.log("🧹 MongoDB disconnected after caching setup.");
+    if (isMain) {
+      await mongoose.disconnect();
+      console.log("🧹 MongoDB disconnected after caching setup.");
+    }
   } catch (err) {
     console.error("❌ Failed to cache bus data:", err);
   }

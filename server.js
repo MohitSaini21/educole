@@ -19,7 +19,7 @@ if (cluster.isPrimary) {
 
   // Initialize data in Redis before workers start
   await masterClient.flushAll();
-  await setAllRouteStops(masterClient);
+  await setAllRouteStops(masterClient, true);
   await new Promise((res) => setTimeout(res, 300));
 
   // Fork workers and assign different ports

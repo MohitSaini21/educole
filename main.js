@@ -1232,7 +1232,7 @@ const startServer = async () => {
       });
     }
 
-    server.listen(process.env.PORT, () => {
+    server.listen(process.env.PORT || 3000, () => {
       console.log(
         `🚀 Server is running and listening at port ${process.env.PORT}  and here is the proccess Id ${process.pid}`
       );
