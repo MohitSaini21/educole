@@ -52,6 +52,7 @@ const dbUrl = process.env.DB_URL;
 
 // Initialize Express App
 const app = express();
+    
 
 // Initialize Passport
 const __filename = fileURLToPath(import.meta.url);

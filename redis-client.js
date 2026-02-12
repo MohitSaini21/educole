@@ -1,13 +1,31 @@
 import { createClient } from "redis";
 
 // Create the main Redis client
-const client = createClient({
-  password: "AMX6cfNMcFR4mLtHQjVd6Og0zwnbepKQ",
-  socket: {
-    host: "redis-18009.c273.us-east-1-2.ec2.cloud.redislabs.com",
-    port: 18009,
-  },
+// const client =createClient({
+//     socket: {
+//         host: "127.0.0.1", // this is correct for Node.js on Windows
+//         port: 6379,
+//     },
+//     // password: "..." // only if you set one
+// });
+
+
+// connecting with the redis cloud.
+
+const client =createClient({
+    socket: {
+        host: "redis-14364.c309.us-east-2-1.ec2.cloud.redislabs.com",
+        port: 14364,
+        tls: false, // ✅ REQUIRED for Redis Cloud
+    },
+    password: "EeKtW8atYkXAy3iWJMupYn6JvsjBH0Tf" // 🔥 you will fill this yourself
+    // password: "..." // only if you set one
 });
+
+
+
+
+
 
 // Adapter clients for Socket.IO Redis adapter
 export const pubClient = client.duplicate();
